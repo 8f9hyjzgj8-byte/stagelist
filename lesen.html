@@ -180,6 +180,10 @@ body.live main { padding-bottom: 96px; }
 .kopf .wer b { font-size: 28px; line-height: 1.15; overflow-wrap: anywhere; }
 .kopf .wer .unter { display: block; margin-top: 3px; font-size: 14px; color: var(--gedimmt); }
 .kopf .wer .unter .singt { font-size: 19px; font-weight: 700; color: var(--jetzt); }
+.zettel { display: flex; gap: 10px; align-items: baseline; margin: -4px 0 14px; padding: 10px 14px; border-radius: 12px;
+  background: #F5A623; color: #000; font-size: 20px; line-height: 1.25; white-space: pre-wrap; }
+.zettel b { font-weight: 800; }
+body.geteilt .zettel { margin-bottom: 10px; font-size: 18px; }
 @media (max-width: 520px) {
   .kopf { gap: 10px; padding: 12px; }
   .kopf .gross b { font-size: 30px; }
@@ -728,12 +732,16 @@ function songZeigen(l, e) {
     r !== "drummer" && rhythmus ? html(rhythmus) : "",
     lage ? '<span class="marke dann">Medley ' + lage.platz + "/" + lage.anzahl + "</span>" : ""].filter(Boolean).join(" · ");
   const wer = "<b>" + html(s.titel) + '</b><span class="unter">' + unter + "</span>";
+  // Spickzettel der Band dieser Setliste: groß und gelb unter dem Kopf; ohne Text erscheint nichts.
+  const zettelText = (Object.entries(s.notizen || {}).find(([band]) => klein(band) === klein(l.bandID)) || [])[1];
+  const zettel = zettelText && zettelText.trim()
+    ? '<div class="zettel" aria-label="Spickzettel"><span aria-hidden="true">✎</span><b>' + html(zettelText.trim()) + "</b></div>" : "";
   const kopfTeil = '<div class="kopf">'
     + (r === "drummer" ? "" : '<div class="gross mono"><b>' + html(tonartText(tonart) || "–") + "</b><span>TONART</span></div>")
     + '<div class="wer">' + wer + "</div>"
     + (e.modus ? '<div class="modusgross mono" aria-label="Modus ' + html(e.modus) + '">' + html(e.modus) + "</div>" : "")
     + (bpm && r !== "drummer" ? '<div class="tempo mono"><b>' + html(bpm) + "</b><span>BPM" + taktart + "</span></div>" : "")
-    + "</div>";
+    + "</div>" + zettel;
   const blaettern = '<div class="blaettern">'
     + '<button class="knopf" data-eintrag="' + (davor ? html(davor.id) : "") + '"' + (davor ? "" : " disabled") + ">‹ <span>" + (davor ? name(davor) : "Erster Song") + "</span></button>"
     + '<button class="knopf vor" data-eintrag="' + (danach ? html(danach.id) : "") + '"' + (danach ? "" : " disabled") + "><span>" + (danach ? name(danach) : "Letzter Song") + "</span> ›</button>"

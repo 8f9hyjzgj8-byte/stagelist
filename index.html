@@ -319,6 +319,13 @@
                 <div class="chips" id="bands"></div>
             </div>
 
+            <div class="karte" style="border-color: #F5A623;">
+                <h3 style="color: #F5A623;">Spickzettel</h3>
+                <div id="notizen"></div>
+                <p class="hilfe">Je Band ein kurzer Hinweis zum Song, z. B. „Nur Gitarre und Sängerin fangen an“. Er steht groß und gelb im Songkopf,
+                    in der App und auf der Leseseite. Ohne Text erscheint nichts.</p>
+            </div>
+
             <div class="karte">
                 <h3>Sänger</h3>
                 <div class="saenger" id="saenger"></div>
@@ -489,6 +496,7 @@ function songZuWeb(s, version) {
         energiestufen: [...(s.energiestufen || [])].sort(), bandIDs: s.bandIDs || [], merkmalIDs: s.merkmalIDs || [],
         abschnitte: s.abschnitte || [], text: s.text || "",
         saenger: paare(s.saenger).map(([id, wert]) => ({ saengerID: id, tonart: wert.tonart ?? null })),
+        notizen: { ...(s.notizen || {}) },
         bewertung: s.bewertung || 0, version: String(version), hatAudio: false, hatPDF: false
     };
 }
@@ -502,7 +510,11 @@ function webZuSong(w, alt) {
         if (tag.tonart) wert.tonart = tag.tonart; else delete wert.tonart;
         saenger.push(tag.saengerID, wert);
     }
-    return { ...(alt || {}), id: w.id, titel: w.titel.trim(), kuenstler: w.kuenstler.trim(), tonart: w.tonart, bpm: Math.min(Math.max(w.bpm || 0, 0), 400),
+    // Spickzettel je Band: leere Einträge verschwinden, ohne Einträge fehlt das Feld ganz (wie in der App).
+    const notizen = Object.fromEntries(Object.entries(w.notizen || {}).filter(([, text]) => String(text).trim()));
+    const basis = { ...(alt || {}) };
+    if (Object.keys(notizen).length) basis.notizen = notizen; else delete basis.notizen;
+    return { ...basis, id: w.id, titel: w.titel.trim(), kuenstler: w.kuenstler.trim(), tonart: w.tonart, bpm: Math.min(Math.max(w.bpm || 0, 0), 400),
              taktart: w.taktart.trim() || "4/4", dauerSekunden: w.dauerSekunden, energiestufen: w.energiestufen, bandIDs: w.bandIDs,
              merkmalIDs: w.merkmalIDs, abschnitte: w.abschnitte, text: w.text, saenger, bewertung: w.bewertung };
 }
@@ -758,6 +770,7 @@ function editorZeigen() {
     $("text").value = s.text;
     sterneZeigen();
     bandsZeigen();
+    notizenZeigen();
     saengerZeigen();
     merkmaleZeigen();
     abschnitteZeigen();
@@ -787,6 +800,22 @@ function chip(text, an, farbe, daten) {
     return `<button type="button" class="chip${an ? " an" : ""}" ${stil} ${daten}>${html(text)}</button>`;
 }
 
+// Spickzettel: ein Feld je Band des Songs (ohne Bands: alle Bands).
+const notizSchluessel = id => Object.keys(auswahl.notizen || {}).find(k => k.toLowerCase() === id.toLowerCase()) || id;
+function notizenZeigen() {
+    const eigene = daten.bands.filter(b => auswahl.bandIDs.includes(b.id));
+    $("notizen").innerHTML = (eigene.length ? eigene : daten.bands).map(b =>
+        `<label class="feld breit">${html(b.name)}
+            <textarea data-notiz="${b.id}" rows="2" style="min-height: 0; height: auto;">${html((auswahl.notizen || {})[notizSchluessel(b.id)] || "")}</textarea></label>`).join("");
+}
+$("notizen").addEventListener("input", e => {
+    const id = e.target.dataset.notiz;
+    if (!id) return;
+    auswahl.notizen = auswahl.notizen || {};
+    auswahl.notizen[notizSchluessel(id)] = e.target.value;
+    markieren(true);
+});
+
 function bandsZeigen() {
     $("bands").innerHTML = daten.bands.map(b =>
         chip(b.name, auswahl.bandIDs.includes(b.id), farben[b.farbe], `data-band="${b.id}"`)).join("");
@@ -796,6 +825,7 @@ $("bands").addEventListener("click", e => {
     if (!id) return;
     auswahl.bandIDs = umschalten(auswahl.bandIDs, id);
     bandsZeigen();
+    notizenZeigen();
     markieren(true);
 });
 
