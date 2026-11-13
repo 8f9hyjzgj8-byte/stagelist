@@ -1,0 +1,1747 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StageList</title>
+<style>
+    :root {
+        color-scheme: dark;
+        --hg: #0B0C10; --leiste: #101218; --karte: #15171E; --karte-hoch: #1F222B;
+        --rand: rgba(255,255,255,0.08); --text: #F3F1EA; --gedimmt: #8E93A3;
+        --koralle: #E86A9A; --tuerkis: #1B6FA3; --lila: #9B6DF0; --gelb: #F5A623;
+        --gruen: #4ADE80; --blau: #2E9BD6; --rot: #F87171;
+        --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--hg); color: var(--text);
+        font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+
+    /* Anmeldung */
+    #anmeldung { display: grid; place-items: center; height: 100%; }
+    #anmeldung form { background: var(--karte); border: 1px solid var(--rand); border-radius: 20px;
+        padding: 32px; width: min(360px, 92vw); text-align: center; }
+    #anmeldung h1 { margin: 0 0 6px; font-size: 22px; }
+    #anmeldung p { margin: 0 0 20px; color: var(--gedimmt); }
+    #anmeldung input { width: 100%; margin-bottom: 10px; }
+
+    /* Aufbau */
+    #app { display: none; height: 100%; grid-template-columns: 340px 1fr; }
+    #app.offen { display: grid; }
+    aside { background: var(--leiste); border-right: 1px solid var(--rand); display: flex;
+        flex-direction: column; min-height: 0; }
+    .kopf { padding: 16px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--rand); }
+    .kopf h1 { margin: 0; font-size: 20px; display: flex; align-items: center; gap: 8px; }
+    .punkt { width: 9px; height: 9px; border-radius: 50%; background: var(--gruen); display: inline-block; }
+    .punkt.weg { background: var(--rot); }
+    #liste { overflow-y: auto; flex: 1; padding: 6px 8px 20px; }
+    .eintrag { padding: 9px 10px; border-radius: 10px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+    .eintrag:hover { background: var(--karte); }
+    .eintrag.aktiv { background: var(--karte-hoch); }
+    .eintrag .t { font-weight: 600; }
+    .eintrag .k { color: var(--gedimmt); font-size: 13px; }
+    .eintrag .ton { font: 13px var(--mono); color: var(--gedimmt); white-space: nowrap; }
+    .anzahl { color: var(--gedimmt); font-size: 13px; padding: 4px 10px; }
+
+    main { overflow-y: auto; min-height: 0; }
+    #leer { color: var(--gedimmt); display: grid; place-items: center; height: 100%; }
+    #editor { display: none; max-width: 980px; padding: 24px 32px 80px; }
+    #editor.offen { display: block; }
+    .leiste { position: sticky; top: 0; z-index: 2; background: var(--hg); padding: 12px 0;
+        display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--rand); margin-bottom: 18px; }
+    .leiste h2 { margin: 0; font-size: 22px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #meldung { color: var(--gedimmt); font-size: 13px; }
+    #meldung.fehler { color: var(--rot); }
+    #meldung.ok { color: var(--gruen); }
+
+    .karte { background: var(--karte); border: 1px solid var(--rand); border-radius: 18px; padding: 18px; margin-bottom: 16px; }
+    .karte > h3 { margin: 0 0 12px; font-size: 16px; }
+    .raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+    .raster .breit { grid-column: span 2; }
+    /* Eigene Vorschlagsliste für den Künstler (die eingebaute des Browsers ist in Safari auf dunklen Seiten nicht lesbar). */
+    #kuenstlerVorschlag { position: absolute; left: 0; right: 0; top: 100%; z-index: 30; margin-top: 4px; background: var(--karte-hoch);
+        border: 1px solid var(--rand); border-radius: 10px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+    #kuenstlerVorschlag button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 8px 12px;
+        color: var(--text); font-size: 15px; }
+    #kuenstlerVorschlag button:hover { background: rgba(255,255,255,.08); }
+    label.feld, div.feld { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--gedimmt); }
+    input[type=text], input[type=number], input[type=search], select, textarea {
+        background: var(--karte-hoch); border: 1px solid var(--rand); border-radius: 10px; padding: 8px 10px;
+        color: var(--text); width: 100%; outline: none; }
+    input:focus, select:focus, textarea:focus { border-color: var(--koralle); }
+    textarea { font-family: var(--mono); resize: vertical; min-height: 80px; line-height: 1.5; tab-size: 4; }
+    #text { min-height: 320px; font-family: inherit; }
+    .mono { font-family: var(--mono); }
+
+    .knopf { white-space: nowrap; border: 1px solid var(--rand); background: var(--karte-hoch); border-radius: 10px; padding: 7px 12px; }
+    .knopf:hover { border-color: rgba(255,255,255,0.25); }
+    .knopf.haupt { background: var(--koralle); border-color: var(--koralle); color: #111; font-weight: 700; }
+    .knopf.haupt:disabled { opacity: 0.4; cursor: default; }
+    .knopf.gefahr { color: var(--rot); }
+    .knopf.klein { padding: 3px 8px; font-size: 13px; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { border: 1px solid var(--rand); border-radius: 999px; padding: 4px 11px; font-size: 13px;
+        background: transparent; color: var(--gedimmt); }
+    .chip.an { color: #111; font-weight: 600; border-color: transparent; }
+    .gruppe { margin-bottom: 12px; }
+    .gruppe:last-child { margin-bottom: 0; }
+    .gruppe .name { font-size: 12px; font-weight: 700; color: var(--gedimmt); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
+
+    .saenger { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+    .saenger .zeile { display: flex; align-items: center; gap: 8px; background: var(--karte-hoch);
+        border-radius: 10px; padding: 6px 8px; border: 1px solid transparent; }
+    .saenger .zeile.an { border-color: var(--rand); }
+    .saenger .zeile:not(.an) { opacity: 0.55; }
+    .saenger select { width: 90px; padding: 4px 6px; }
+    .saenger .n { flex: 1; }
+
+    .abschnitt { border: 1px solid var(--rand); border-radius: 14px; padding: 12px; margin-bottom: 10px; background: var(--karte-hoch); }
+    .abschnitt .zeile { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .abschnitt .zeile select { width: 170px; font-weight: 700; }
+    .abschnitt .zeile .hinweis { flex: 1; }
+    .abschnitt .zeile .wdh { width: 70px; }
+    .abschnitt textarea { background: var(--hg); }
+    .sterne button { background: none; border: none; font-size: 22px; padding: 0 2px; color: var(--gedimmt); }
+    .sterne button.an { color: var(--gelb); }
+    .hilfe { color: var(--gedimmt); font-size: 12px; margin-top: 6px; }
+    .hilfe code { font-family: var(--mono); color: var(--text); }
+    #konflikt { display: none; background: rgba(245,166,35,0.12); border: 1px solid var(--gelb); border-radius: 12px;
+        padding: 10px 14px; margin-bottom: 16px; align-items: center; gap: 10px; }
+    #konflikt.offen { display: flex; }
+    #konflikt span { flex: 1; }
+
+    /* Reiter Songs / Setlisten */
+    .reiter { display: flex; gap: 4px; background: var(--karte); border-radius: 12px; padding: 4px; }
+    .reiter button { flex: 1; border: none; background: none; border-radius: 9px; padding: 6px; color: var(--gedimmt); font-weight: 600; }
+    .reiter button.an { background: var(--karte-hoch); color: var(--text); }
+    .eintrag .datum { font: 600 14px var(--mono); }
+    .bandstrich { width: 4px; border-radius: 2px; align-self: stretch; flex: none; }
+
+    /* Setlisten-Editor */
+    #setEditor { display: none; max-width: 1100px; padding: 24px 32px 80px; }
+    #setEditor.offen { display: block; }
+    #slKonflikt { display: none; background: rgba(245,166,35,0.12); border: 1px solid var(--gelb); border-radius: 12px;
+        padding: 10px 14px; margin-bottom: 16px; align-items: center; gap: 10px; }
+    #slKonflikt.offen { display: flex; }
+    #slKonflikt span { flex: 1; }
+    .haken { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text); }
+    .summe { font: 14px var(--mono); color: var(--gedimmt); }
+    .set { background: var(--karte); border: 1px solid var(--rand); border-radius: 18px; padding: 14px; margin-bottom: 16px; }
+    .set .setkopf { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .set .setkopf input.setname { font-weight: 700; font-size: 16px; max-width: 260px; }
+    .set .setkopf input.pause { width: 64px; }
+    .set .setkopf .summe { flex: 1; text-align: right; white-space: nowrap; }
+    .zeilen { min-height: 44px; border-radius: 12px; }
+    .zeilen.ziel { outline: 2px dashed var(--koralle); outline-offset: 2px; }
+    .zeile-s { display: grid; grid-template-columns: 22px 28px 1fr 104px 150px 58px 54px auto; gap: 8px; align-items: center;
+        padding: 5px 6px; border-radius: 10px; background: var(--karte-hoch); margin-bottom: 4px; border-top: 2px solid transparent; }
+    .zeile-s.drueber { border-top-color: var(--koralle); }
+    .zeile-s.ziehen { opacity: 0.4; }
+    .zeile-s .griff { cursor: grab; color: var(--gedimmt); text-align: center; user-select: none; }
+    .zeile-s .nr { font: 13px var(--mono); color: var(--gedimmt); text-align: right; }
+    .zeile-s .song { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .zeile-s .song .k { color: var(--gedimmt); font-size: 13px; }
+    .zeile-s select { padding: 4px 6px; font-size: 13px; }
+    .zeile-s .d { font: 13px var(--mono); color: var(--gedimmt); text-align: right; }
+    .zeile-s .medley { font-size: 10px; font-weight: 700; color: var(--lila); letter-spacing: 1px; margin-left: 6px; }
+    .zeile-s .knoepfe { display: flex; gap: 4px; }
+    /* Schmales Fenster: Songtitel in eigener Zeile, die Auswahlfelder darunter */
+    @media (max-width: 1180px) {
+        .zeile-s { grid-template-columns: 22px 28px 1fr 1fr 58px 48px auto; }
+        .zeile-s .song { grid-column: 3 / -1; }
+        .zeile-s select[data-feld="tonart"] { grid-column: 1 / 4; }
+        .set .setkopf { flex-wrap: wrap; }
+    }
+    .leerhinweis { color: var(--gedimmt); font-size: 13px; padding: 12px; text-align: center; }
+
+    /* Song-Auswahl */
+    #auswahl { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10; place-items: center; }
+    #auswahl.offen { display: grid; }
+    #auswahl .fenster { background: var(--leiste); border: 1px solid var(--rand); border-radius: 18px; width: min(560px, 94vw);
+        height: min(640px, 86vh); display: flex; flex-direction: column; overflow: hidden; }
+    #auswahl .fkopf { padding: 14px; display: flex; gap: 8px; border-bottom: 1px solid var(--rand); }
+    #auswahlListe { overflow-y: auto; flex: 1; padding: 6px 8px; }
+    #auswahlListe .eintrag.benutzt { opacity: 0.45; }
+    #auswahlListe .eintrag .plus { color: var(--koralle); font-weight: 700; }
+
+    /* Admin: Historie und Mitglieder */
+    #admin { display: none; position: fixed; inset: 0; background: var(--hg); z-index: 20; flex-direction: column; }
+    #admin.offen { display: flex; }
+    #admin .akopf { display: flex; gap: 12px; align-items: center; padding: 12px 18px; background: var(--leiste);
+        border-bottom: 1px solid var(--rand); flex-wrap: wrap; }
+    #admin .ainhalt { flex: 1; overflow-y: auto; padding: 18px; }
+    .hzeile { background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; margin-bottom: 8px; }
+    .hzeile > button { all: unset; display: grid; grid-template-columns: 150px 130px 110px 90px 1fr; gap: 10px;
+        width: 100%; box-sizing: border-box; padding: 10px 14px; cursor: pointer; }
+    .hzeile .zeit { font: 13px var(--mono); color: var(--gedimmt); }
+    .hzeile .aktion-geloescht, .hzeile .aktion-endgueltig_geloescht { color: var(--rot); }
+    .hzeile .aktion-neu, .hzeile .aktion-wiederhergestellt { color: var(--gruen); }
+    .hdetail { padding: 0 14px 14px; }
+    .hdetail table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 10px; }
+    .hdetail th { text-align: left; color: var(--gedimmt); font-size: 13px; padding: 4px 8px; }
+    .hdetail td { vertical-align: top; padding: 6px 8px; border-top: 1px solid var(--rand); white-space: pre-wrap;
+        overflow-wrap: anywhere; font-size: 13px; }
+    .mzeile { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--karte);
+        border: 1px solid var(--rand); border-radius: 12px; margin-bottom: 8px; }
+    .mzeile .wartet { color: var(--gelb, #F5A623); font-weight: 600; }
+    .mzeile small { display: block; color: var(--gedimmt); font-size: 13px; margin-top: 2px; }
+    /* Verbrauch */
+    .vkarte { background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+    .vkarte h3 { margin: 0 0 8px; font-size: 15px; }
+    .vkarte .gross { font: 700 26px var(--mono); }
+    .vbalken { height: 10px; border-radius: 5px; background: rgba(255,255,255,.1); overflow: hidden; margin: 8px 0 6px; }
+    .vbalken i { display: block; height: 100%; background: var(--gruen); }
+    .vbalken i.warn { background: #F5A623; } .vbalken i.voll { background: var(--rot); }
+    .vraster { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 18px; }
+    .vraster span { display: block; color: var(--gedimmt); font-size: 13px; }
+    @media (max-width: 760px) {
+        .hzeile > button { grid-template-columns: 1fr 1fr; }
+    }
+</style>
+</head>
+<body>
+
+<div id="anmeldung">
+    <form id="loginForm">
+        <h1>StageList</h1>
+        <p>Melde dich mit deinem Konto an.</p>
+        <input type="email" id="loginEmail" placeholder="E-Mail" autocomplete="username" autofocus required>
+        <input type="password" id="loginPasswort" placeholder="Passwort" autocomplete="current-password" required>
+        <button class="knopf haupt" style="width: 100%;">Anmelden</button>
+        <p id="loginFehler" style="color: var(--rot); margin: 12px 0 0; min-height: 1.4em;"></p>
+    </form>
+</div>
+
+<div id="app">
+    <aside>
+        <div class="kopf">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="punkt" id="verbunden" title="Verbindung zum Server"></span>
+                <div class="reiter" style="flex: 1;">
+                    <button type="button" data-modus="songs" class="an">Songs</button>
+                    <button type="button" data-modus="setlisten">Setlisten</button>
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="knopf klein" id="adminKnopf" style="display: none; flex: 1;">Historie &amp; Mitglieder</button>
+                <button class="knopf klein" id="abmelden" style="flex: 1;">Abmelden</button>
+            </div>
+            <input type="search" id="suche" placeholder="Titel oder Künstler suchen">
+            <div style="display: flex; gap: 8px;">
+                <select id="bandFilter" style="flex: 1;"></select>
+                <select id="archivFilter" style="width: 104px; display: none;">
+                    <option value="aktiv">Aktiv</option><option value="proben">Proben</option><option value="archiv">Archiv</option>
+                </select>
+                <button class="knopf" id="neu">＋ Neu</button>
+            </div>
+        </div>
+        <div id="liste"></div>
+    </aside>
+    <main>
+        <div id="leer">Wähle links einen Song.</div>
+        <div id="setEditor">
+            <div class="leiste">
+                <h2 id="slUeberschrift"></h2>
+                <span id="slMeldung"></span>
+                <button class="knopf gefahr" id="slLoeschen">Löschen</button>
+                <button class="knopf haupt" id="slSpeichern" title="⌘S">Speichern</button>
+            </div>
+
+            <div id="slKonflikt">
+                <span>Diese Setliste wurde inzwischen von jemand anderem geändert.</span>
+                <button class="knopf" id="slKonfliktLaden">Neuesten Stand laden</button>
+                <button class="knopf" id="slKonfliktUeberschreiben">Meine Änderungen behalten</button>
+            </div>
+
+            <div class="karte">
+                <div class="raster">
+                    <label class="feld breit">Name <input type="text" id="slName"></label>
+                    <label class="feld">Band <select id="slBand"></select></label>
+                    <label class="feld">Datum <input type="date" id="slDatum"></label>
+                </div>
+                <div style="display: flex; gap: 20px; align-items: center; margin-top: 12px;">
+                    <label class="haken"><input type="checkbox" id="slArchiv"> Im Archiv</label>
+                    <label class="haken"><input type="checkbox" id="slProbe"> Probe</label>
+                    <label class="haken"><input type="checkbox" id="slStatistik"> Zählt in der Statistik</label>
+                    <span class="summe" id="slSumme" style="flex: 1; text-align: right;"></span>
+                </div>
+            </div>
+
+            <div id="sets"></div>
+            <button class="knopf" id="setNeu">＋ Set</button>
+            <p class="hilfe">Songs am Griff ⠿ ziehen, um sie umzusortieren – auch in ein anderes Set.
+                Sänger wählen setzt seine Tonart; Songs ohne eigene Dauer zählen mit der Standard-Songdauer.</p>
+        </div>
+
+        <div id="auswahl">
+            <div class="fenster">
+                <div class="fkopf">
+                    <input type="search" id="auswahlSuche" placeholder="Song suchen" style="flex: 1;">
+                    <button class="knopf" id="auswahlFertig">Fertig</button>
+                </div>
+                <div id="auswahlListe"></div>
+            </div>
+        </div>
+        <div id="editor">
+            <div class="leiste">
+                <h2 id="ueberschrift"></h2>
+                <span id="meldung"></span>
+                <button class="knopf gefahr" id="loeschen">Löschen</button>
+                <button class="knopf haupt" id="speichern" title="⌘S">Speichern</button>
+            </div>
+
+            <div id="konflikt">
+                <span>Dieser Song wurde inzwischen von jemand anderem geändert.</span>
+                <button class="knopf" id="konfliktLaden">Neuesten Stand laden</button>
+                <button class="knopf" id="konfliktUeberschreiben">Meine Änderungen behalten</button>
+            </div>
+
+            <div class="karte">
+                <h3>Song</h3>
+                <div class="raster">
+                    <label class="feld breit">Titel <input type="text" id="titel"></label>
+                    <label class="feld breit">Künstler <input type="text" id="kuenstler" list="kuenstlerListe"></label>
+                    <label class="feld">Tonart <select id="tonart"></select></label>
+                    <label class="feld">BPM <input type="number" id="bpm" min="0" max="400"></label>
+                    <label class="feld">Taktart <input type="text" id="taktart" class="mono" placeholder="4/4"></label>
+                    <label class="feld">Dauer (m:ss) <input type="text" id="dauer" class="mono" placeholder="3:30"></label>
+                    <div class="feld">Bewertung <span class="sterne" id="sterne"></span></div>
+                </div>
+                <datalist id="kuenstlerListe"></datalist>
+                <p class="hilfe" id="medien"></p>
+            </div>
+
+            <div class="karte">
+                <h3>Bands</h3>
+                <div class="chips" id="bands"></div>
+            </div>
+
+            <div class="karte">
+                <h3>Sänger</h3>
+                <div class="saenger" id="saenger"></div>
+                <p class="hilfe">Anhaken = Sänger kann den Song. Daneben die eigene Tonart des Sängers.</p>
+            </div>
+
+            <div class="karte">
+                <h3>Merkmale</h3>
+                <div id="merkmale"></div>
+            </div>
+
+            <div class="karte">
+                <h3 style="display: flex; justify-content: space-between; align-items: center;">
+                    Akkorde <button class="knopf klein" id="abschnittNeu">＋ Abschnitt</button>
+                </h3>
+                <div id="abschnitte"></div>
+                <p class="hilfe"><code>|</code> Taktstrich · <code>-</code> Akkord klingt weiter ·
+                    <code>*Notiz</code> grau · <code>**Notiz</code> orangegelb · <code>(…)</code> pink</p>
+            </div>
+
+            <div class="karte">
+                <h3 style="display: flex; align-items: center; gap: 12px;">Liedtext
+                    <span style="flex: 1;"></span>
+                    <button type="button" class="knopf klein" id="textSuchen" title="Sucht bei Google nach Titel, Künstler und „lyrics“">Text bei Google suchen ↗</button>
+                </h3>
+                <textarea id="text" spellcheck="false"></textarea>
+                <p class="hilfe"><code># Refren</code> in einer eigenen Zeile beginnt einen Textabschnitt ·
+                    <code>[pink]Text[/]</code> färbt eine Passage (pink, blau, gruen, gelb, orange, rot, lila).</p>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div id="admin">
+    <div class="akopf">
+        <div class="reiter" id="adminReiter" style="min-width: 340px;">
+            <button type="button" data-admin="historie" class="an">Historie</button>
+            <button type="button" data-admin="mitglieder">Mitglieder</button>
+            <button type="button" data-admin="verbrauch">Verbrauch</button>
+        </div>
+        <select id="hPerson" style="width: 180px;"></select>
+        <select id="hArt" style="width: 150px;">
+            <option value="">Alles</option><option value="song">Songs</option><option value="setliste">Setlisten</option>
+        </select>
+        <span style="flex: 1;"></span>
+        <button class="knopf" id="adminSchliessen">Schließen</button>
+    </div>
+    <div class="ainhalt" id="adminInhalt"></div>
+</div>
+
+<script>
+"use strict";
+
+const farben = { koralle: "#E86A9A", tuerkis: "#1B6FA3", lila: "#9B6DF0", gelb: "#F5A623", gruen: "#4ADE80", blau: "#2E9BD6" };
+const kategorien = [["genre", "Genre", "tuerkis"], ["rhythmus", "Rhythmus", "koralle"], ["tag", "Tags", "lila"]];
+
+let daten = null;          // Antwort von /api/daten
+let auswahl = null;        // Kopie des gewählten Songs, wird bearbeitet
+let geaendert = false;     // ungespeicherte Änderungen
+let istNeu = false;
+let abgleichTimer = null;
+let modus = "songs";       // „songs“ oder „setlisten“
+let sl = null;             // Kopie der gewählten Setliste, wird bearbeitet
+let slNeu = false;
+const $ = id => document.getElementById(id);
+
+// MARK: Verbindung zum Server
+
+// Auf dem eigenen Rechner spricht die Seite mit dem Testserver, sonst mit Supabase. Der Publishable Key ist nicht geheim:
+// Was jemand lesen oder ändern darf, prüft der Server. Secret Key und Datenbank-Passwort gehören nie hierher.
+const SERVER = ["127.0.0.1", "localhost"].includes(location.hostname) ? location.origin : "https://ibvuuiznqhlqkfrhwvae.supabase.co";
+const SCHLUESSEL = "sb_publishable_DesGCN1lZxybGuGMwiMkKA_2G7aDf6b";
+const SEITE = 1000;
+const TONARTEN = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B", "Cm", "C#m", "Dm", "Ebm", "Em", "Fm", "F#m", "Gm", "G#m", "Am", "Bbm", "Bm"];
+
+let sitzung = null;
+try { sitzung = JSON.parse(localStorage.getItem("sitzung")); } catch (e) {}
+let profil = null;
+const roh = new Map();   // Zeilen vom Server, Schlüssel: ID in Kleinschreibung
+
+function sitzungMerken(antwort) {
+    sitzung = { zugriff: antwort.access_token, erneuerung: antwort.refresh_token,
+                ablauf: Date.now() + antwort.expires_in * 1000, userID: antwort.user.id };
+    try { localStorage.setItem("sitzung", JSON.stringify(sitzung)); } catch (e) {}
+}
+
+function sitzungEnde() {
+    sitzung = null;
+    profil = null;
+    try { localStorage.removeItem("sitzung"); } catch (e) {}
+    if (abgleichTimer) { clearInterval(abgleichTimer); abgleichTimer = null; }
+    $("app").classList.remove("offen");
+    $("admin").classList.remove("offen");
+    $("anmeldung").style.display = "";
+    $("loginPasswort").value = "";
+}
+
+async function tokenHolen(art, inhalt) {
+    const antwort = await fetch(`${SERVER}/auth/v1/token?grant_type=${art}`, {
+        method: "POST", headers: { apikey: SCHLUESSEL, "Content-Type": "application/json" }, body: JSON.stringify(inhalt)
+    });
+    const json = await antwort.json().catch(() => ({}));
+    if (!antwort.ok) { const f = new Error(json.msg || json.error_description || "Anmeldung fehlgeschlagen"); f.status = antwort.status; throw f; }
+    sitzungMerken(json);
+}
+
+async function erneuern() {
+    try {
+        await tokenHolen("refresh_token", { refresh_token: sitzung.erneuerung });
+    } catch (fehler) {
+        if (fehler.status === 400 || fehler.status === 401) sitzungEnde();
+        throw fehler;
+    }
+}
+
+async function server(methode, pfad, inhalt, prefer) {
+    if (!sitzung) { const f = new Error("Bitte anmelden."); f.status = 401; throw f; }
+    if (sitzung.ablauf - Date.now() < 60000) await erneuern();
+    const senden = () => fetch(SERVER + pfad, {
+        method: methode,
+        headers: { apikey: SCHLUESSEL, Authorization: "Bearer " + sitzung.zugriff, "Content-Type": "application/json",
+                   ...(prefer ? { Prefer: prefer } : {}) },
+        body: inhalt === undefined ? undefined : JSON.stringify(inhalt)
+    });
+    let antwort = await senden();
+    if (antwort.status === 401) { await erneuern(); antwort = await senden(); }
+    const text = await antwort.text();
+    const json = text ? JSON.parse(text) : null;
+    if (!antwort.ok) { const f = new Error((json && json.message) || antwort.statusText); f.status = antwort.status; throw f; }
+    return json;
+}
+
+const SPALTEN = "id,art,band_ids,inhalt,geloescht,version,aenderung_nr";
+const kennung = id => String(id).toLowerCase();
+
+async function allesLaden() {
+    roh.clear();
+    let nummer = 0;
+    while (true) {
+        const seite = await server("GET", `/rest/v1/datensatz?select=${SPALTEN}&aenderung_nr=gt.${nummer}&order=aenderung_nr.asc&limit=${SEITE}`);
+        for (const zeile of seite) { roh.set(kennung(zeile.id), zeile); nummer = zeile.aenderung_nr; }
+        if (seite.length < SEITE) break;
+    }
+    const von = art => [...roh.values()].filter(z => z.art === art && !z.geloescht).map(z => z);
+    const inhalte = art => von(art).map(z => z.inhalt);
+    const energie = inhalte("energieNamen")[0];
+    return {
+        stand: String(nummer),
+        songs: von("song").map(z => songZuWeb(z.inhalt, z.version)),
+        setlisten: von("setliste").map(z => setlisteZuWeb(z.inhalt, z.version)),
+        standardDauerSekunden: 150,
+        bands: inhalte("band"), saenger: inhalte("saenger"), abschnittArten: inhalte("abschnittArt"),
+        merkmale: inhalte("merkmal"), energieNamen: energie || [], tonarten: TONARTEN
+    };
+}
+
+// Swift speichert ein Wörterbuch mit UUID-Schlüsseln als Liste [Schlüssel, Wert, Schlüssel, Wert, …].
+function paare(liste) {
+    const ergebnis = [];
+    for (let i = 0; i + 1 < (liste || []).length; i += 2) ergebnis.push([liste[i], liste[i + 1]]);
+    return ergebnis;
+}
+
+function songZuWeb(s, version) {
+    return {
+        id: s.id, titel: s.titel || "", kuenstler: s.kuenstler || "", tonart: s.tonart || "", bpm: s.bpm || 0,
+        taktart: s.taktart || "4/4", dauerSekunden: s.dauerSekunden || 0,
+        energiestufen: [...(s.energiestufen || [])].sort(), bandIDs: s.bandIDs || [], merkmalIDs: s.merkmalIDs || [],
+        abschnitte: s.abschnitte || [], text: s.text || "",
+        saenger: paare(s.saenger).map(([id, wert]) => ({ saengerID: id, tonart: wert.tonart ?? null })),
+        bewertung: s.bewertung || 0, version: String(version), hatAudio: false, hatPDF: false
+    };
+}
+
+// Felder, die die Web-App nicht kennt, bleiben erhalten.
+function webZuSong(w, alt) {
+    const alteTags = new Map(paare(alt && alt.saenger));
+    const saenger = [];
+    for (const tag of w.saenger) {
+        const wert = { ...(alteTags.get(tag.saengerID) || {}) };
+        if (tag.tonart) wert.tonart = tag.tonart; else delete wert.tonart;
+        saenger.push(tag.saengerID, wert);
+    }
+    return { ...(alt || {}), id: w.id, titel: w.titel.trim(), kuenstler: w.kuenstler.trim(), tonart: w.tonart, bpm: Math.min(Math.max(w.bpm || 0, 0), 400),
+             taktart: w.taktart.trim() || "4/4", dauerSekunden: w.dauerSekunden, energiestufen: w.energiestufen, bandIDs: w.bandIDs,
+             merkmalIDs: w.merkmalIDs, abschnitte: w.abschnitte, text: w.text, saenger, bewertung: w.bewertung };
+}
+
+// Swift speichert Datumswerte als Sekunden seit dem 1.1.2001.
+const SEIT_2001 = 978307200;
+const tagText = d => {
+    const t = new Date((d + SEIT_2001) * 1000);
+    return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
+};
+
+function setlisteZuWeb(s, version) {
+    return { id: s.id, name: s.name || "", bandID: s.bandID, datum: s.datum == null ? null : tagText(s.datum),
+             sets: s.sets || [], archiviert: !!s.archiviert, inStatistik: s.inStatistik !== false, probe: !!s.probe,
+             version: String(version) };
+}
+
+function webZuSetliste(w, alt) {
+    const neu = { ...(alt || {}), id: w.id, name: w.name.trim(), bandID: w.bandID, sets: w.sets, archiviert: w.archiviert, inStatistik: w.inStatistik, probe: !!w.probe };
+    if (!w.datum) delete neu.datum;
+    else if (!(alt && alt.datum != null && tagText(alt.datum) === w.datum)) {
+        // Ein neues Datum gilt mittags, damit es nicht durch die Zeitzone auf den Vortag rutscht.
+        const [j, m, t] = w.datum.split("-").map(Number);
+        neu.datum = new Date(j, m - 1, t, 12).getTime() / 1000 - SEIT_2001;
+    }
+    return neu;
+}
+
+/// Schreibt eine Zeile. Mit Version: Schlägt fehl (409), wenn sie inzwischen jemand anderes geändert hat.
+async function zeileSchreiben(art, id, inhalt, bandIDs, version, erzwingen) {
+    const alt = roh.get(kennung(id));
+    let zeile;
+    if (alt) {
+        const filter = `id=eq.${id}` + (erzwingen ? "" : `&version=eq.${version}`);
+        const rueck = await server("PATCH", `/rest/v1/datensatz?${filter}&select=${SPALTEN}`,
+                                   { inhalt, band_ids: bandIDs, geloescht: false }, "return=representation");
+        zeile = rueck[0];
+        if (!zeile) {
+            // Keine Zeile zurück: entweder geändert von jemand anderem oder gar kein Unterschied.
+            const jetzt = (await server("GET", `/rest/v1/datensatz?select=${SPALTEN}&id=eq.${id}`))[0];
+            if (!jetzt || (!erzwingen && String(jetzt.version) !== String(version))) {
+                const f = new Error("Konflikt"); f.status = 409; throw f;
+            }
+            zeile = jetzt;
+        }
+    } else {
+        const rueck = await server("POST", `/rest/v1/datensatz?select=${SPALTEN}`,
+                                   { id, art, band_ids: bandIDs, inhalt, geloescht: false }, "return=representation");
+        zeile = rueck[0];
+    }
+    roh.set(kennung(id), zeile);
+    return zeile;
+}
+
+async function zeileLoeschen(id) {
+    const rueck = await server("PATCH", `/rest/v1/datensatz?id=eq.${id}&select=${SPALTEN}`, { geloescht: true }, "return=representation");
+    if (rueck[0]) roh.set(kennung(id), rueck[0]);
+}
+
+/// Der übrige Code spricht wie früher mit „api“; hier wird daraus die Sprache des Servers.
+async function api(methode, pfad, inhalt) {
+    if (methode === "GET" && pfad === "daten") return allesLaden();
+    if (methode === "GET" && pfad === "stand") {
+        const rueck = await server("GET", "/rest/v1/datensatz?select=aenderung_nr&order=aenderung_nr.desc&limit=1");
+        return { stand: String(rueck[0] ? rueck[0].aenderung_nr : 0) };
+    }
+    const [bereich, id] = pfad.split("/");
+    if (methode === "PUT" && bereich === "songs") {
+        const alt = roh.get(kennung(id));
+        const neu = webZuSong(inhalt.song, alt && alt.inhalt);
+        const zeile = await zeileSchreiben("song", id, neu, neu.bandIDs, inhalt.version, inhalt.erzwingen);
+        return { song: songZuWeb(zeile.inhalt, zeile.version), stand: String(zeile.aenderung_nr) };
+    }
+    if (methode === "PUT" && bereich === "setlisten") {
+        const alt = roh.get(kennung(id));
+        const neu = webZuSetliste(inhalt.setliste, alt && alt.inhalt);
+        const zeile = await zeileSchreiben("setliste", id, neu, [neu.bandID], inhalt.version, inhalt.erzwingen);
+        return { setliste: setlisteZuWeb(zeile.inhalt, zeile.version), stand: String(zeile.aenderung_nr) };
+    }
+    if (methode === "DELETE" && bereich === "songs") {
+        await zeileLoeschen(id);
+        // Wie in der App: Der Song verschwindet auch aus Setlisten und Medleys.
+        for (const zeile of [...roh.values()]) {
+            if (zeile.geloescht) continue;
+            if (zeile.art === "setliste" && zeile.inhalt.sets.some(s => s.eintraege.some(e => e.songID === id))) {
+                const kopie = { ...zeile.inhalt, sets: zeile.inhalt.sets.map(s => ({ ...s, eintraege: s.eintraege.filter(e => e.songID !== id) })) };
+                await zeileSchreiben("setliste", zeile.id, kopie, zeile.band_ids, null, true);
+            }
+            if (zeile.art === "medley" && zeile.inhalt.eintraege.some(e => e.songID === id)) {
+                const kopie = { ...zeile.inhalt, eintraege: zeile.inhalt.eintraege.filter(e => e.songID !== id) };
+                await zeileSchreiben("medley", zeile.id, kopie, zeile.band_ids, null, true);
+            }
+        }
+        const daneu = await allesLaden();
+        daten.setlisten = daneu.setlisten;
+        return { stand: daneu.stand };
+    }
+    if (methode === "DELETE" && bereich === "setlisten") {
+        await zeileLoeschen(id);
+        return (await api("GET", "stand"));
+    }
+    throw new Error("Unbekannte Anfrage: " + pfad);
+}
+
+async function starten() {
+    try {
+        const rueck = await server("GET", `/rest/v1/profile?select=name,ist_admin,freigegeben&id=eq.${sitzung.userID}`);
+        profil = rueck[0];
+        if (!profil || !(profil.ist_admin || profil.freigegeben)) {
+            const name = $("loginEmail").value;
+            sitzungEnde();
+            $("loginEmail").value = name;
+            $("loginFehler").textContent = "Dieses Konto ist noch nicht freigegeben. Bitte den Admin fragen.";
+            return;
+        }
+        daten = await api("GET", "daten");
+        $("anmeldung").style.display = "none";
+        $("app").classList.add("offen");
+        // Nur eine Anzeige: Ob jemand die Historie lesen darf, entscheidet der Server.
+        $("adminKnopf").style.display = profil.ist_admin ? "" : "none";
+        aufbauen();
+        if (!abgleichTimer) abgleichTimer = setInterval(abgleichen, 15000);
+    } catch (fehler) {
+        $("loginFehler").textContent = fehler.status === 401 ? "Bitte neu anmelden." : "Keine Verbindung zum Server.";
+    }
+}
+
+/// Fragt regelmäßig, ob jemand anderes etwas geändert hat.
+async function abgleichen() {
+    try {
+        const { stand } = await api("GET", "stand");
+        $("verbunden").classList.remove("weg");
+        if (stand === daten.stand) return;
+        daten = await api("GET", "daten");
+        aufbauen();
+        if (modus === "setlisten") {
+            if (!sl || slNeu) return;
+            const neu = daten.setlisten.find(s => s.id === sl.id);
+            if (!neu) { if (!geaendert) slSchliessen(); return; }
+            if (neu.version === sl.version) return;
+            if (geaendert) $("slKonflikt").classList.add("offen");
+            else slOeffnen(neu.id);
+            return;
+        }
+        if (!auswahl || istNeu) return;
+        const aktuell = daten.songs.find(s => s.id === auswahl.id);
+        if (!aktuell) { if (!geaendert) schliessen(); return; }
+        if (aktuell.version === auswahl.version) return;
+        if (geaendert) $("konflikt").classList.add("offen");
+        else oeffnen(aktuell.id);
+    } catch (fehler) {
+        $("verbunden").classList.add("weg");
+    }
+}
+
+// MARK: Songliste
+
+function aufbauen() {
+    const filter = $("bandFilter");
+    const gewaehlt = filter.value;
+    filter.innerHTML = '<option value="">Alle Bands</option>' +
+        daten.bands.map(b => `<option value="${b.id}">${html(b.name)}</option>`).join("");
+    filter.value = daten.bands.some(b => b.id === gewaehlt) ? gewaehlt : "";
+    $("kuenstlerListe").innerHTML = [...new Set(daten.songs.map(s => s.kuenstler).filter(Boolean))]
+        .sort().map(k => `<option value="${html(k)}">`).join("");
+    listeZeigen();
+}
+
+function listeZeigen() {
+    if (modus === "setlisten") return setlistenZeigen();
+    const suche = $("suche").value.trim().toLowerCase();
+    const band = $("bandFilter").value;
+    const songs = daten.songs
+        .filter(s => !band || s.bandIDs.includes(band))
+        .filter(s => !suche || (s.titel + " " + s.kuenstler).toLowerCase().includes(suche))
+        .sort((a, b) => a.titel.localeCompare(b.titel, "de"));
+    $("liste").innerHTML = `<div class="anzahl">${songs.length} Songs</div>` + songs.map(s => `
+        <div class="eintrag${auswahl && s.id === auswahl.id ? " aktiv" : ""}" data-id="${s.id}">
+            <div><div class="t">${html(s.titel)}</div><div class="k">${html(s.kuenstler)}</div></div>
+            <div class="ton">${html(s.tonart)}${s.bpm ? " · " + s.bpm : ""}</div>
+        </div>`).join("");
+}
+
+$("liste").addEventListener("click", e => {
+    const eintrag = e.target.closest(".eintrag");
+    if (eintrag && eintrag.dataset.id && verwerfenOk()) (modus === "setlisten" ? slOeffnen : oeffnen)(eintrag.dataset.id);
+});
+$("suche").addEventListener("input", listeZeigen);
+$("bandFilter").addEventListener("change", listeZeigen);
+$("archivFilter").addEventListener("change", listeZeigen);
+document.querySelector(".reiter").addEventListener("click", e => {
+    const neu = e.target.dataset.modus;
+    if (!neu || neu === modus || !verwerfenOk()) return;
+    geaendert = false;
+    modus = neu;
+    document.querySelectorAll(".reiter button").forEach(b => b.classList.toggle("an", b.dataset.modus === modus));
+    $("archivFilter").style.display = modus === "setlisten" ? "" : "none";
+    $("suche").value = "";
+    $("suche").placeholder = modus === "setlisten" ? "Setliste suchen" : "Titel oder Künstler suchen";
+    $("leer").textContent = modus === "setlisten" ? "Wähle links eine Setliste." : "Wähle links einen Song.";
+    schliessen();
+    slSchliessen();
+});
+$("neu").addEventListener("click", () => {
+    if (!verwerfenOk()) return;
+    if (modus === "setlisten") return slNeuAnlegen();
+    const band = $("bandFilter").value;
+    auswahl = { id: uuid(), titel: "", kuenstler: "", tonart: "", bpm: 0, taktart: "4/4",
+        dauerSekunden: 0, energiestufen: [], bandIDs: band ? [band] : [], merkmalIDs: [], abschnitte: [],
+        text: "", saenger: [], bewertung: 0, version: "", hatAudio: false, hatPDF: false };
+    istNeu = true;
+    editorZeigen();
+    markieren(true);
+    $("titel").focus();
+});
+
+function verwerfenOk() {
+    return !geaendert || confirm("Ungespeicherte Änderungen verwerfen?");
+}
+
+// MARK: Editor
+
+function oeffnen(id) {
+    const song = daten.songs.find(s => s.id === id);
+    if (!song) return;
+    auswahl = structuredClone(song);
+    istNeu = false;
+    editorZeigen();
+    markieren(false);
+}
+
+function schliessen() {
+    auswahl = null;
+    $("editor").classList.remove("offen");
+    $("leer").style.display = "";
+    listeZeigen();
+}
+
+function editorZeigen() {
+    const s = auswahl;
+    $("leer").style.display = "none";
+    $("editor").classList.add("offen");
+    $("konflikt").classList.remove("offen");
+    $("ueberschrift").textContent = s.titel || "Neuer Song";
+    $("titel").value = s.titel;
+    $("kuenstler").value = s.kuenstler;
+    $("tonart").innerHTML = tonartOptionen(s.tonart, "–");
+    $("bpm").value = s.bpm || "";
+    $("taktart").value = s.taktart;
+    $("dauer").value = s.dauerSekunden ? dauerText(s.dauerSekunden) : "";
+    $("medien").textContent = [s.hatAudio && "Audiodatei vorhanden", s.hatPDF && "PDF vorhanden"]
+        .filter(Boolean).join(" · ") + ((s.hatAudio || s.hatPDF) ? " (in der App bearbeitbar)" : "");
+    $("text").value = s.text;
+    sterneZeigen();
+    bandsZeigen();
+    saengerZeigen();
+    merkmaleZeigen();
+    abschnitteZeigen();
+    listeZeigen();
+}
+
+function tonartOptionen(gewaehlt, leer) {
+    const liste = daten.tonarten.includes(gewaehlt) || !gewaehlt ? daten.tonarten : [gewaehlt, ...daten.tonarten];
+    return `<option value="">${leer}</option>` +
+        liste.map(t => `<option${t === gewaehlt ? " selected" : ""}>${t}</option>`).join("");
+}
+
+function sterneZeigen() {
+    $("sterne").innerHTML = [1, 2, 3].map(n =>
+        `<button type="button" data-n="${n}" class="${auswahl.bewertung >= n ? "an" : ""}">★</button>`).join("");
+}
+$("sterne").addEventListener("click", e => {
+    const n = Number(e.target.dataset.n);
+    if (!n) return;
+    auswahl.bewertung = auswahl.bewertung === n ? 0 : n;
+    sterneZeigen();
+    markieren(true);
+});
+
+function chip(text, an, farbe, daten) {
+    const stil = an ? `style="background: ${farbe}"` : "";
+    return `<button type="button" class="chip${an ? " an" : ""}" ${stil} ${daten}>${html(text)}</button>`;
+}
+
+function bandsZeigen() {
+    $("bands").innerHTML = daten.bands.map(b =>
+        chip(b.name, auswahl.bandIDs.includes(b.id), farben[b.farbe], `data-band="${b.id}"`)).join("");
+}
+$("bands").addEventListener("click", e => {
+    const id = e.target.dataset.band;
+    if (!id) return;
+    auswahl.bandIDs = umschalten(auswahl.bandIDs, id);
+    bandsZeigen();
+    markieren(true);
+});
+
+function merkmaleZeigen() {
+    const energie = daten.energieNamen.map((name, i) =>
+        chip(`${i + 1} · ${name}`, auswahl.energiestufen.includes(i + 1), farben.gelb, `data-energie="${i + 1}"`)).join("");
+    $("merkmale").innerHTML = kategorien.map(([kat, titel, farbe]) => {
+        const liste = daten.merkmale.filter(m => m.kategorie === kat);
+        if (!liste.length) return "";
+        return `<div class="gruppe"><div class="name">${titel}</div><div class="chips">` +
+            liste.map(m => chip(m.name, auswahl.merkmalIDs.includes(m.id),
+                m.farbeHex ? "#" + m.farbeHex : farben[farbe], `data-merkmal="${m.id}"`)).join("") +
+            `</div></div>`;
+    }).join("") + `<div class="gruppe"><div class="name">Energie</div><div class="chips">${energie}</div></div>`;
+}
+$("merkmale").addEventListener("click", e => {
+    const { merkmal, energie } = e.target.dataset;
+    if (merkmal) auswahl.merkmalIDs = umschalten(auswahl.merkmalIDs, merkmal);
+    else if (energie) auswahl.energiestufen = umschalten(auswahl.energiestufen, Number(energie)).sort();
+    else return;
+    merkmaleZeigen();
+    markieren(true);
+});
+
+function saengerZeigen() {
+    // Archivierte Sänger nur zeigen, wenn sie am Song hängen.
+    const liste = daten.saenger.filter(s => !s.archiviert || auswahl.saenger.some(t => t.saengerID === s.id));
+    $("saenger").innerHTML = liste.map(s => {
+        const tag = auswahl.saenger.find(t => t.saengerID === s.id);
+        return `<div class="zeile${tag ? " an" : ""}" data-saenger="${s.id}">
+            <input type="checkbox" ${tag ? "checked" : ""}>
+            <span class="punkt" style="background: ${farben[s.farbe]}"></span>
+            <span class="n">${html(s.name)}${s.geschlecht ? ` <span style="color: var(--gedimmt)">${s.geschlecht.toUpperCase()}</span>` : ""}</span>
+            <select ${tag ? "" : "disabled"}>${tonartOptionen(tag && tag.tonart || "", "wie Song")}</select>
+        </div>`;
+    }).join("") || '<span class="hilfe">Noch keine Sänger angelegt.</span>';
+}
+$("saenger").addEventListener("change", e => {
+    const zeile = e.target.closest(".zeile");
+    if (!zeile) return;
+    const id = zeile.dataset.saenger;
+    if (e.target.type === "checkbox") {
+        auswahl.saenger = e.target.checked
+            ? [...auswahl.saenger, { saengerID: id, tonart: null }]
+            : auswahl.saenger.filter(t => t.saengerID !== id);
+        saengerZeigen();
+    } else {
+        const tag = auswahl.saenger.find(t => t.saengerID === id);
+        if (tag) tag.tonart = e.target.value || null;
+    }
+    markieren(true);
+});
+
+function abschnitteZeigen() {
+    $("abschnitte").innerHTML = auswahl.abschnitte.map((a, i) => `
+        <div class="abschnitt" data-i="${i}">
+            <div class="zeile">
+                <select data-feld="artID" style="color: ${farben[(daten.abschnittArten.find(x => x.id === a.artID) || {}).farbe] || "inherit"}">
+                    ${daten.abschnittArten.map(x => `<option value="${x.id}"${x.id === a.artID ? " selected" : ""}>${html(x.name)}</option>`).join("")}
+                </select>
+                <input type="text" class="hinweis" data-feld="hinweis" placeholder="Hinweis, z. B. Dist. Gitarre" value="${html(a.hinweis)}">
+                <input type="number" class="wdh" data-feld="wiederholungen" min="1" max="99" title="Wiederholungen" value="${a.wiederholungen}">
+                <button type="button" class="knopf klein" data-aktion="hoch" title="Nach oben">↑</button>
+                <button type="button" class="knopf klein" data-aktion="runter" title="Nach unten">↓</button>
+                <button type="button" class="knopf klein" data-aktion="kopie" title="Duplizieren">⧉</button>
+                <button type="button" class="knopf klein gefahr" data-aktion="weg" title="Löschen">✕</button>
+            </div>
+            <textarea data-feld="akkorde" spellcheck="false" rows="${Math.max(2, a.akkorde.split("\n").length + 1)}">${html(a.akkorde)}</textarea>
+        </div>`).join("") || '<span class="hilfe">Noch keine Abschnitte.</span>';
+}
+$("abschnitte").addEventListener("input", e => {
+    const block = e.target.closest(".abschnitt");
+    const feld = e.target.dataset.feld;
+    if (!block || !feld) return;
+    const a = auswahl.abschnitte[Number(block.dataset.i)];
+    a[feld] = feld === "wiederholungen" ? Math.max(1, Number(e.target.value) || 1) : e.target.value;
+    if (feld === "artID") abschnitteZeigen();
+    markieren(true);
+});
+$("abschnitte").addEventListener("click", e => {
+    const aktion = e.target.dataset.aktion;
+    const block = e.target.closest(".abschnitt");
+    if (!aktion || !block) return;
+    const i = Number(block.dataset.i);
+    const liste = auswahl.abschnitte;
+    if (aktion === "hoch" && i > 0) [liste[i - 1], liste[i]] = [liste[i], liste[i - 1]];
+    else if (aktion === "runter" && i < liste.length - 1) [liste[i + 1], liste[i]] = [liste[i], liste[i + 1]];
+    else if (aktion === "kopie") liste.splice(i + 1, 0, { ...liste[i], id: uuid() });
+    else if (aktion === "weg") { if (!confirm("Abschnitt löschen?")) return; liste.splice(i, 1); }
+    else return;
+    abschnitteZeigen();
+    markieren(true);
+});
+$("abschnittNeu").addEventListener("click", () => {
+    if (!daten.abschnittArten.length) return alert("Es sind noch keine Abschnittsarten angelegt.");
+    auswahl.abschnitte.push({ id: uuid(), artID: daten.abschnittArten[0].id,
+        hinweis: "", wiederholungen: 1, akkorde: "" });
+    abschnitteZeigen();
+    markieren(true);
+    const felder = $("abschnitte").querySelectorAll("textarea");
+    felder[felder.length - 1].focus();
+});
+
+// Einfache Felder
+for (const [id, feld] of [["titel", "titel"], ["kuenstler", "kuenstler"], ["taktart", "taktart"], ["text", "text"], ["tonart", "tonart"]]) {
+    $(id).addEventListener("input", () => {
+        auswahl[feld] = $(id).value;
+        if (feld === "titel") $("ueberschrift").textContent = auswahl.titel || "Neuer Song";
+        markieren(true);
+    });
+}
+$("bpm").addEventListener("input", () => { auswahl.bpm = Math.max(0, Number($("bpm").value) || 0); markieren(true); });
+$("dauer").addEventListener("input", () => markieren(true));
+
+// MARK: Speichern und Löschen
+
+function markieren(wert) {
+    geaendert = wert;
+    $("speichern").disabled = $("slSpeichern").disabled = !wert;
+    if (wert) meldung("Nicht gespeichert", "");
+}
+
+function meldung(text, art) {
+    const feld = $(modus === "setlisten" ? "slMeldung" : "meldung");
+    feld.textContent = text;
+    feld.className = art;
+}
+
+async function speichern(erzwingen = false) {
+    if (!auswahl || !geaendert) return;
+    const dauer = dauerSekunden($("dauer").value);
+    if (dauer === null) return meldung("Dauer bitte als m:ss, z. B. 3:30", "fehler");
+    auswahl.dauerSekunden = dauer;
+    if (!auswahl.titel.trim()) return meldung("Der Titel fehlt.", "fehler");
+    try {
+        $("speichern").disabled = true;
+        const antwort = await api("PUT", "songs/" + auswahl.id, { song: auswahl, version: auswahl.version, erzwingen });
+        const index = daten.songs.findIndex(s => s.id === antwort.song.id);
+        if (index >= 0) daten.songs[index] = antwort.song; else daten.songs.push(antwort.song);
+        daten.stand = antwort.stand;
+        auswahl = structuredClone(antwort.song);
+        istNeu = false;
+        editorZeigen();
+        markieren(false);
+        meldung("Gespeichert ✓", "ok");
+        aufbauen();
+    } catch (fehler) {
+        $("speichern").disabled = false;
+        if (fehler.status === 409) { $("konflikt").classList.add("offen"); meldung("Konflikt", "fehler"); }
+        else meldung(fehler.message, "fehler");
+    }
+}
+
+$("speichern").addEventListener("click", () => speichern());
+$("konfliktUeberschreiben").addEventListener("click", () => { $("konflikt").classList.remove("offen"); speichern(true); });
+$("konfliktLaden").addEventListener("click", async () => {
+    daten = await api("GET", "daten");
+    aufbauen();
+    geaendert = false;
+    if (daten.songs.some(s => s.id === auswahl.id)) oeffnen(auswahl.id); else schliessen();
+});
+document.addEventListener("keydown", e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "s") { e.preventDefault(); modus === "setlisten" ? slSpeichern() : speichern(); }
+    if (e.key === "Escape" && $("auswahl").classList.contains("offen")) auswahlSchliessen();
+});
+window.addEventListener("beforeunload", e => { if (geaendert) e.preventDefault(); });
+
+$("loeschen").addEventListener("click", async () => {
+    if (istNeu) { geaendert = false; return schliessen(); }
+    if (!confirm(`„${auswahl.titel}“ wirklich löschen? Der Song verschwindet auch aus allen Setlisten.`)) return;
+    try {
+        const { stand } = await api("DELETE", "songs/" + auswahl.id);
+        daten.songs = daten.songs.filter(s => s.id !== auswahl.id);
+        daten.stand = stand;
+        geaendert = false;
+        schliessen();
+    } catch (fehler) { meldung(fehler.message, "fehler"); }
+});
+
+// MARK: Setlisten
+
+const bandVon = id => daten.bands.find(b => b.id === id);
+const songVon = id => daten.songs.find(s => s.id === id);
+const songDauer = s => s && s.dauerSekunden > 0 ? s.dauerSekunden : daten.standardDauerSekunden;
+const setDauer = set => set.eintraege.reduce((summe, e) => summe + songDauer(songVon(e.songID)), 0);
+
+function setlistenZeigen() {
+    const suche = $("suche").value.trim().toLowerCase();
+    const band = $("bandFilter").value;
+    // Wie in der App: „Aktiv“ zeigt die Gigs, „Proben“ die Proben-Setlisten, „Archiv“ alles Archivierte.
+    const ansicht = $("archivFilter").value, archiv = ansicht === "archiv";
+    const liste = daten.setlisten
+        .filter(s => !band || s.bandID === band)
+        .filter(s => s.archiviert === archiv && (archiv || !!s.probe === (ansicht === "proben")))
+        .filter(s => !suche || s.name.toLowerCase().includes(suche))
+        .sort((a, b) => (b.datum || "").localeCompare(a.datum || "") || a.name.localeCompare(b.name, "de"));
+    // Unter „Proben“ steht oben die Wishlist: Songs, die eine Band in die Probe nehmen will (in der App die Glühbirne).
+    const wuensche = ansicht !== "proben" ? "" : daten.bands.filter(b => !band || b.id === band).map(b => {
+        const songs = (b.wishlist || []).map(songVon)
+            .filter(x => x && (!suche || (x.titel + " " + x.kuenstler).toLowerCase().includes(suche)));
+        if (!songs.length) return "";
+        return `<div class="anzahl">💡 Wishlist · ${html(b.name)} · ${songs.length}</div>` + songs.map(x =>
+            `<div class="eintrag" style="justify-content: flex-start; cursor: default;">
+                <span class="bandstrich" style="background: ${farben[b.farbe] || "var(--gedimmt)"}"></span>
+                <div style="flex: 1; min-width: 0;"><div class="t">${html(x.titel)}</div><div class="k">${html(x.kuenstler || "")}</div></div>
+                <div class="ton">${html(x.tonart || "")}</div>
+            </div>`).join("");
+    }).join("");
+    $("liste").innerHTML = wuensche + `<div class="anzahl">${liste.length} Setlisten</div>` + liste.map(s => {
+        const b = bandVon(s.bandID) || {};
+        const anzahl = s.sets.reduce((n, set) => n + set.eintraege.length, 0);
+        return `<div class="eintrag${sl && s.id === sl.id ? " aktiv" : ""}" data-id="${s.id}" style="justify-content: flex-start;">
+            <span class="bandstrich" style="background: ${farben[b.farbe] || "var(--gedimmt)"}"></span>
+            <div style="flex: 1; min-width: 0;"><div class="datum">${s.datum || "ohne Datum"}</div>
+                <div class="t">${html(s.name)}</div><div class="k">${html(b.name || "")}${s.probe && archiv ? " · Probe" : ""}</div></div>
+            <div class="ton">${anzahl} Songs</div>
+        </div>`;
+    }).join("");
+}
+
+function slOeffnen(id) {
+    const s = daten.setlisten.find(x => x.id === id);
+    if (!s) return;
+    sl = structuredClone(s);
+    slNeu = false;
+    slZeigen();
+    markieren(false);
+}
+
+function slSchliessen() {
+    sl = null;
+    $("setEditor").classList.remove("offen");
+    $("leer").style.display = "";
+    listeZeigen();
+}
+
+function slNeuAnlegen() {
+    const band = $("bandFilter").value || (daten.bands[0] || {}).id;
+    if (!band) return alert("Es ist noch keine Band angelegt.");
+    // Unter „Proben“ entsteht eine Probe, sonst eine normale Setliste.
+    const alsProbe = $("archivFilter").value === "proben";
+    sl = { id: uuid(), name: alsProbe ? "Probe" : "Neue Setliste", bandID: band, datum: heute(),
+        sets: [{ id: uuid(), name: "Set 1", eintraege: [], pauseMinuten: 0 }],
+        archiviert: false, inStatistik: true, probe: alsProbe, version: "" };
+    slNeu = true;
+    slZeigen();
+    markieren(true);
+    $("slName").select();
+}
+
+function slZeigen() {
+    $("leer").style.display = "none";
+    $("editor").classList.remove("offen");
+    $("setEditor").classList.add("offen");
+    $("slKonflikt").classList.remove("offen");
+    $("slUeberschrift").textContent = sl.name || "Neue Setliste";
+    $("slName").value = sl.name;
+    $("slBand").innerHTML = daten.bands.map(b =>
+        `<option value="${b.id}"${b.id === sl.bandID ? " selected" : ""}>${html(b.name)}</option>`).join("");
+    $("slDatum").value = sl.datum || "";
+    $("slArchiv").checked = sl.archiviert;
+    // Proben zählen nie in die Statistik.
+    $("slProbe").checked = !!sl.probe;
+    $("slStatistik").checked = sl.inStatistik && !sl.probe;
+    $("slStatistik").disabled = !!sl.probe;
+    setsZeigen();
+    listeZeigen();
+}
+
+function summeZeigen() {
+    const songs = sl.sets.reduce((n, s) => n + s.eintraege.length, 0);
+    const gesamt = sl.sets.reduce((t, s) => t + setDauer(s) + s.pauseMinuten * 60, 0);
+    $("slSumme").textContent = `${songs} Songs · ${sl.sets.length} Sets · gesamt ${stundenText(gesamt)} mit Pausen`;
+    document.querySelectorAll(".set").forEach(el => {
+        const set = sl.sets[Number(el.dataset.k)];
+        el.querySelector(".setkopf .summe").textContent = `${set.eintraege.length} Songs · ${dauerText(setDauer(set))}`;
+    });
+}
+
+function setsZeigen() {
+    const saenger = daten.saenger.filter(s => !s.archiviert);
+    $("sets").innerHTML = sl.sets.map((set, k) => `
+        <div class="set" data-k="${k}">
+            <div class="setkopf">
+                <input type="text" class="setname" data-feld="name" value="${html(set.name)}">
+                <span class="hilfe" style="margin: 0;">Pause</span>
+                <input type="number" class="pause" data-feld="pauseMinuten" min="0" max="240" value="${set.pauseMinuten}">
+                <span class="hilfe" style="margin: 0;">min</span>
+                <span class="summe"></span>
+                <button type="button" class="knopf klein" data-aktion="songs">＋ Songs</button>
+                <button type="button" class="knopf klein" data-aktion="hoch" title="Set nach oben">↑</button>
+                <button type="button" class="knopf klein" data-aktion="runter" title="Set nach unten">↓</button>
+                <button type="button" class="knopf klein gefahr" data-aktion="weg" title="Set löschen">✕</button>
+            </div>
+            <div class="zeilen" data-k="${k}">
+                ${set.eintraege.map((e, n) => zeileHTML(e, k, n, saenger)).join("") ||
+                    '<div class="leerhinweis">Noch keine Songs – „＋ Songs“ oder hierher ziehen.</div>'}
+            </div>
+        </div>`).join("");
+    summeZeigen();
+}
+
+function zeileHTML(e, k, n, saenger) {
+    const song = songVon(e.songID) || { titel: "(gelöscht)", kuenstler: "", tonart: "", saenger: [] };
+    const kann = new Set(song.saenger.map(t => t.saengerID));
+    // Sänger, die den Song können, zuerst
+    const liste = [...saenger].sort((a, b) => (kann.has(b.id) - kann.has(a.id)) || a.name.localeCompare(b.name, "de"));
+    if (e.saengerID && !liste.some(s => s.id === e.saengerID)) {
+        const alt = daten.saenger.find(s => s.id === e.saengerID);
+        if (alt) liste.push(alt);
+    }
+    return `<div class="zeile-s" data-k="${k}" data-n="${n}">
+        <span class="griff" draggable="true" title="Ziehen zum Umsortieren">⠿</span>
+        <span class="nr">${n + 1}</span>
+        <span class="song"><b>${html(song.titel)}</b> <span class="k">${html(song.kuenstler)}</span>${e.medleyID ? '<span class="medley">MEDLEY</span>' : ""}</span>
+        <select data-feld="tonart" title="Tonart in dieser Setliste">
+            <option value="">${song.tonart ? "Orig. " + html(song.tonart) : "Original"}</option>
+            ${daten.tonarten.map(t => `<option${t === e.tonart ? " selected" : ""}>${t}</option>`).join("")}
+        </select>
+        <select data-feld="saengerID" title="Sänger">
+            <option value="">Sänger –</option>
+            ${liste.map(s => `<option value="${s.id}"${s.id === e.saengerID ? " selected" : ""}>${kann.has(s.id) ? "✓ " : ""}${html(s.name)}</option>`).join("")}
+        </select>
+        <select data-feld="modus" title="Modus">
+            ${["", "P", "1", "2"].map(m => `<option value="${m}"${(e.modus || "") === m ? " selected" : ""}>${m || "–"}</option>`).join("")}
+        </select>
+        <span class="d">${dauerText(songDauer(songVon(e.songID)))}</span>
+        <span class="knoepfe">
+            <button type="button" class="knopf klein" data-aktion="e-hoch" title="Nach oben">↑</button>
+            <button type="button" class="knopf klein" data-aktion="e-runter" title="Nach unten">↓</button>
+            <button type="button" class="knopf klein gefahr" data-aktion="e-weg" title="Aus der Setliste entfernen">✕</button>
+        </span>
+    </div>`;
+}
+
+// Kopf der Setliste
+$("slName").addEventListener("input", () => {
+    sl.name = $("slName").value;
+    $("slUeberschrift").textContent = sl.name || "Neue Setliste";
+    markieren(true);
+});
+$("slBand").addEventListener("change", () => { sl.bandID = $("slBand").value; markieren(true); });
+$("slDatum").addEventListener("input", () => { sl.datum = $("slDatum").value || null; markieren(true); });
+$("slArchiv").addEventListener("change", () => { sl.archiviert = $("slArchiv").checked; markieren(true); });
+$("slStatistik").addEventListener("change", () => { sl.inStatistik = $("slStatistik").checked; markieren(true); });
+$("slProbe").addEventListener("change", () => {
+    sl.probe = $("slProbe").checked;
+    $("slStatistik").checked = sl.inStatistik && !sl.probe;
+    $("slStatistik").disabled = sl.probe;
+    markieren(true);
+});
+$("setNeu").addEventListener("click", () => {
+    sl.sets.push({ id: uuid(), name: "Set " + (sl.sets.length + 1), eintraege: [], pauseMinuten: 0 });
+    setsZeigen();
+    markieren(true);
+});
+
+// Felder in Sets und Zeilen
+$("sets").addEventListener("input", e => {
+    const feld = e.target.dataset.feld;
+    const setEl = e.target.closest(".set");
+    if (!feld || !setEl || e.target.closest(".zeile-s")) return;
+    const set = sl.sets[Number(setEl.dataset.k)];
+    set[feld] = feld === "pauseMinuten" ? Math.max(0, Number(e.target.value) || 0) : e.target.value;
+    summeZeigen();
+    markieren(true);
+});
+$("sets").addEventListener("change", e => {
+    const zeile = e.target.closest(".zeile-s");
+    const feld = e.target.dataset.feld;
+    if (!zeile || !feld) return;
+    const eintrag = sl.sets[Number(zeile.dataset.k)].eintraege[Number(zeile.dataset.n)];
+    const wert = e.target.value || null;
+    eintrag[feld] = wert;
+    if (feld === "saengerID") {
+        // Wie in der App: Der Sänger bringt seine eigene Tonart mit.
+        const tag = wert && (songVon(eintrag.songID) || { saenger: [] }).saenger.find(t => t.saengerID === wert);
+        eintrag.tonart = tag && tag.tonart ? tag.tonart : null;
+        setsZeigen();
+    }
+    markieren(true);
+});
+$("sets").addEventListener("click", e => {
+    const aktion = e.target.dataset.aktion;
+    if (!aktion) return;
+    const k = Number(e.target.closest(".set").dataset.k);
+    const sets = sl.sets;
+    if (aktion.startsWith("e-")) {
+        const n = Number(e.target.closest(".zeile-s").dataset.n);
+        const liste = sets[k].eintraege;
+        if (aktion === "e-hoch" && n > 0) [liste[n - 1], liste[n]] = [liste[n], liste[n - 1]];
+        else if (aktion === "e-runter" && n < liste.length - 1) [liste[n + 1], liste[n]] = [liste[n], liste[n + 1]];
+        else if (aktion === "e-weg") liste.splice(n, 1);
+        else return;
+    } else if (aktion === "songs") {
+        return auswahlOeffnen(k);
+    } else if (aktion === "hoch" && k > 0) [sets[k - 1], sets[k]] = [sets[k], sets[k - 1]];
+    else if (aktion === "runter" && k < sets.length - 1) [sets[k + 1], sets[k]] = [sets[k], sets[k + 1]];
+    else if (aktion === "weg") {
+        if (sets[k].eintraege.length && !confirm(`„${sets[k].name}“ mit ${sets[k].eintraege.length} Songs löschen?`)) return;
+        sets.splice(k, 1);
+    } else return;
+    setsZeigen();
+    markieren(true);
+});
+
+// Ziehen und Ablegen, auch zwischen Sets
+let gezogen = null;
+function zielMarkenWeg() {
+    document.querySelectorAll(".drueber, .ziel, .ziehen").forEach(el => el.classList.remove("drueber", "ziel", "ziehen"));
+}
+$("sets").addEventListener("dragstart", e => {
+    const zeile = e.target.closest(".zeile-s");
+    if (!zeile) return;
+    gezogen = { k: Number(zeile.dataset.k), n: Number(zeile.dataset.n) };
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", "");
+    e.dataTransfer.setDragImage(zeile, 20, 16);
+    setTimeout(() => zeile.classList.add("ziehen"));
+});
+$("sets").addEventListener("dragover", e => {
+    const zeilen = e.target.closest(".zeilen");
+    if (!gezogen || !zeilen) return;
+    e.preventDefault();
+    zielMarkenWeg();
+    const zeile = e.target.closest(".zeile-s");
+    if (zeile) zeile.classList.add("drueber"); else zeilen.classList.add("ziel");
+});
+$("sets").addEventListener("drop", e => {
+    const zeilen = e.target.closest(".zeilen");
+    if (!gezogen || !zeilen) return;
+    e.preventDefault();
+    const k = Number(zeilen.dataset.k);
+    const zeile = e.target.closest(".zeile-s");
+    let n = zeile ? Number(zeile.dataset.n) : sl.sets[k].eintraege.length;
+    const [eintrag] = sl.sets[gezogen.k].eintraege.splice(gezogen.n, 1);
+    if (gezogen.k === k && gezogen.n < n) n--;
+    sl.sets[k].eintraege.splice(n, 0, eintrag);
+    gezogen = null;
+    setsZeigen();
+    markieren(true);
+});
+$("sets").addEventListener("dragend", () => { gezogen = null; zielMarkenWeg(); });
+
+// Songs hinzufügen
+let auswahlSet = 0;
+function auswahlOeffnen(k) {
+    auswahlSet = k;
+    $("auswahlSuche").value = "";
+    $("auswahl").classList.add("offen");
+    auswahlZeigen();
+    $("auswahlSuche").focus();
+}
+function auswahlSchliessen() {
+    $("auswahl").classList.remove("offen");
+}
+function auswahlZeigen() {
+    const suche = $("auswahlSuche").value.trim().toLowerCase();
+    const benutzt = new Set(sl.sets.flatMap(s => s.eintraege.map(e => e.songID)));
+    const songs = daten.songs
+        .filter(s => s.bandIDs.includes(sl.bandID))
+        .filter(s => !suche || (s.titel + " " + s.kuenstler).toLowerCase().includes(suche))
+        .sort((a, b) => a.titel.localeCompare(b.titel, "de"));
+    $("auswahlListe").innerHTML = `<div class="anzahl">${songs.length} Songs von ${html((bandVon(sl.bandID) || {}).name || "")} → ${html(sl.sets[auswahlSet].name)}</div>` +
+        songs.map(s => `<div class="eintrag${benutzt.has(s.id) ? " benutzt" : ""}" data-id="${s.id}">
+            <div><div class="t">${html(s.titel)}</div><div class="k">${html(s.kuenstler)}</div></div>
+            <div class="ton">${html(s.tonart)}${s.bpm ? " · " + s.bpm : ""} <span class="plus">＋</span></div>
+        </div>`).join("");
+}
+$("auswahlSuche").addEventListener("input", auswahlZeigen);
+$("auswahlFertig").addEventListener("click", auswahlSchliessen);
+$("auswahl").addEventListener("click", e => { if (e.target === $("auswahl")) auswahlSchliessen(); });
+$("auswahlListe").addEventListener("click", e => {
+    const eintrag = e.target.closest(".eintrag");
+    if (!eintrag) return;
+    sl.sets[auswahlSet].eintraege.push({ id: uuid(), songID: eintrag.dataset.id });
+    setsZeigen();
+    auswahlZeigen();
+    markieren(true);
+});
+
+// Speichern und Löschen
+async function slSpeichern(erzwingen = false) {
+    if (!sl || !geaendert) return;
+    if (!sl.name.trim()) return meldung("Der Name fehlt.", "fehler");
+    try {
+        $("slSpeichern").disabled = true;
+        const antwort = await api("PUT", "setlisten/" + sl.id, { setliste: sl, version: sl.version, erzwingen });
+        const index = daten.setlisten.findIndex(s => s.id === antwort.setliste.id);
+        if (index >= 0) daten.setlisten[index] = antwort.setliste; else daten.setlisten.push(antwort.setliste);
+        daten.stand = antwort.stand;
+        sl = structuredClone(antwort.setliste);
+        slNeu = false;
+        slZeigen();
+        markieren(false);
+        meldung("Gespeichert ✓", "ok");
+    } catch (fehler) {
+        $("slSpeichern").disabled = false;
+        if (fehler.status === 409) { $("slKonflikt").classList.add("offen"); meldung("Konflikt", "fehler"); }
+        else meldung(fehler.message, "fehler");
+    }
+}
+$("slSpeichern").addEventListener("click", () => slSpeichern());
+$("slKonfliktUeberschreiben").addEventListener("click", () => { $("slKonflikt").classList.remove("offen"); slSpeichern(true); });
+$("slKonfliktLaden").addEventListener("click", async () => {
+    daten = await api("GET", "daten");
+    aufbauen();
+    geaendert = false;
+    if (daten.setlisten.some(s => s.id === sl.id)) slOeffnen(sl.id); else slSchliessen();
+});
+$("slLoeschen").addEventListener("click", async () => {
+    if (slNeu) { geaendert = false; return slSchliessen(); }
+    if (!confirm(`Setliste „${sl.name}“ wirklich löschen? Das lässt sich nicht rückgängig machen.`)) return;
+    try {
+        const { stand } = await api("DELETE", "setlisten/" + sl.id);
+        daten.setlisten = daten.setlisten.filter(s => s.id !== sl.id);
+        daten.stand = stand;
+        geaendert = false;
+        slSchliessen();
+    } catch (fehler) { meldung(fehler.message, "fehler"); }
+});
+
+// MARK: Hilfsfunktionen
+
+/// Eigene UUID in Großbuchstaben, wie die App sie schreibt.
+function uuid() {
+    const b = crypto.getRandomValues(new Uint8Array(16));
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    const h = [...b].map(x => x.toString(16).padStart(2, "0")).join("").toUpperCase();
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+function heute() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function stundenText(sekunden) {
+    const m = Math.round(sekunden / 60);
+    return Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min";
+}
+function umschalten(liste, wert) {
+    return liste.includes(wert) ? liste.filter(x => x !== wert) : [...liste, wert];
+}
+function dauerText(sekunden) {
+    return Math.floor(sekunden / 60) + ":" + String(sekunden % 60).padStart(2, "0");
+}
+/// „3:30“ → 210, leer → 0, ungültig → null.
+function dauerSekunden(text) {
+    text = text.trim();
+    if (!text) return 0;
+    const m = text.match(/^(\d+)(?::(\d{1,2}))?$/);
+    if (!m || Number(m[2] || 0) > 59) return null;
+    return Number(m[1]) * 60 + Number(m[2] || 0);
+}
+function html(text) {
+    return String(text ?? "").replace(/[&<>"']/g, z => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[z]);
+}
+
+// MARK: Start
+
+$("loginForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    $("loginFehler").textContent = "";
+    try {
+        await tokenHolen("password", { email: $("loginEmail").value.trim(), password: $("loginPasswort").value });
+        $("loginPasswort").value = "";
+        await starten();
+    } catch (fehler) {
+        $("loginFehler").textContent = fehler.status === 400 ? "E-Mail oder Passwort falsch." : "Keine Verbindung zum Server.";
+    }
+});
+$("abmelden").addEventListener("click", () => { if (verwerfenOk()) { geaendert = false; sitzungEnde(); } });
+
+// MARK: Liedtext einfügen
+
+// Webseiten legen Strophen oft nur in der HTML-Fassung der Zwischenablage ab; der reine Text hat dann keine Leerzeilen.
+// Dieselben Regeln wie `TextEinfuegen` in der App.
+const BLOCK = new Set(["ADDRESS", "ARTICLE", "ASIDE", "BLOCKQUOTE", "CENTER", "DD", "DIV", "DL", "DT", "FIGURE", "FOOTER", "FORM",
+    "H1", "H2", "H3", "H4", "H5", "H6", "HEADER", "LI", "MAIN", "NAV", "OL", "P", "PRE", "SECTION", "TABLE", "TR", "UL"]);
+const ABSATZ = new Set(["BLOCKQUOTE", "H1", "H2", "H3", "H4", "H5", "H6", "OL", "P", "PRE", "UL"]);
+const OHNE_INHALT = new Set(["HEAD", "SCRIPT", "STYLE", "TITLE", "NOSCRIPT", "TEMPLATE"]);
+
+function textNormalisiert(roh) {
+    const zeilen = roh.replace(/\r\n|[\r\u2028\u2029\u0085\u000B\u000C]/g, "\n")
+        .replace(/[\u00A0\u2007\u202F\t]/g, " ").replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
+        .split("\n").map(z => z.replace(/ +$/, ""));
+    const ergebnis = [];
+    for (const zeile of zeilen) if (zeile || ergebnis[ergebnis.length - 1]) ergebnis.push(zeile);
+    while (ergebnis.length && !ergebnis[ergebnis.length - 1]) ergebnis.pop();
+    return ergebnis.join("\n");
+}
+
+function randPixel(wert) {
+    const zahl = parseFloat(wert) || 0;
+    return /em$/.test(wert) ? zahl * 16 : zahl;
+}
+
+function textAusHTML(quelle) {
+    // DOMParser führt nichts aus; es wird nur Text ausgelesen.
+    const dokument = new DOMParser().parseFromString(quelle, "text/html");
+    let aus = "", umbrueche = 0;
+    const zeilenende = () => { aus = aus.replace(/ +$/, ""); if (aus && !aus.endsWith("\n")) { aus += "\n"; umbrueche++; } };
+    const leerzeile = () => { zeilenende(); if (aus && !aus.endsWith("\n\n")) aus += "\n"; };
+    (function gehen(knoten) {
+        for (const kind of knoten.childNodes) {
+            if (kind.nodeType === Node.TEXT_NODE) {
+                let text = kind.nodeValue.replace(/[ \t\r\n\f]+/g, " ");
+                if (!aus || aus.endsWith("\n") || aus.endsWith(" ")) text = text.replace(/^ +/, "");
+                aus += text;
+                continue;
+            }
+            if (kind.nodeType !== Node.ELEMENT_NODE || OHNE_INHALT.has(kind.tagName) || kind.hidden) continue;
+            if (kind.style && kind.style.display === "none") continue;
+            if (kind.tagName === "BR") { aus = aus.replace(/ +$/, "") + "\n"; umbrueche++; continue; }
+            const anzeige = kind.style ? kind.style.display : "";
+            const block = anzeige === "block" || (BLOCK.has(kind.tagName) && !anzeige.startsWith("inline"));
+            if (block) { zeilenende(); if (randPixel(kind.style.marginTop) >= 6) leerzeile(); }
+            const start = umbrueche;
+            gehen(kind);
+            if (block) {
+                zeilenende();
+                if (ABSATZ.has(kind.tagName) || randPixel(kind.style.marginBottom) >= 6 || umbrueche - start >= 2) leerzeile();
+            }
+        }
+    })(dokument.body);
+    return aus;
+}
+
+const textKern = text => (text.toLowerCase().match(/[\p{L}\p{N}]/gu) || []).join("");
+const leerzeilenZahl = text => text.split("\n\n").length - 1;
+
+/// Überträgt nur die Strophenabstände der HTML-Fassung auf den reinen Text. Der Inhalt bleibt der reine Text:
+/// So kommt kein versteckter Text der Webseite mit (bei Google etwa eine unsichtbare Fehlermeldung), und die
+/// Abstände gehen trotzdem nicht verloren. Zeilen werden der Reihe nach über ihre Buchstaben zugeordnet.
+function abstaendeUebertragen(einfach, ausHTML) {
+    const h = ausHTML.split("\n"), ergebnis = [];
+    let j = 0, treffer = 0, zeilen = 0;
+    for (const zeile of einfach.split("\n")) {
+        if (!zeile.trim()) { if (ergebnis.length && ergebnis[ergebnis.length - 1] !== "") ergebnis.push(""); continue; }
+        zeilen++;
+        const kern = textKern(zeile);
+        let gefunden = -1, leer = false;
+        // Ein paar Zeilen vorausschauen: Dazwischen darf fremder Text der Seite stehen.
+        for (let x = j; x < Math.min(h.length, j + 8); x++) {
+            if (!h[x].trim()) { leer = true; continue; }
+            if (textKern(h[x]) === kern) { gefunden = x; break; }
+        }
+        if (gefunden >= 0) {
+            if (leer && ergebnis.length && ergebnis[ergebnis.length - 1] !== "") ergebnis.push("");
+            j = gefunden + 1;
+            treffer++;
+        }
+        ergebnis.push(zeile);
+    }
+    // Nur wenn fast alle Zeilen wiedergefunden wurden, gehören beide Fassungen wirklich zusammen.
+    return zeilen && treffer >= zeilen * 0.8 ? ergebnis.join("\n") : einfach;
+}
+
+function textAusZwischenablage(einfachRoh, htmlRoh) {
+    const einfach = textNormalisiert(einfachRoh || "");
+    if (!htmlRoh) return einfach;
+    const ausHTML = textNormalisiert(textAusHTML(htmlRoh));
+    if (!einfach) return ausHTML;
+    // Gleicher Inhalt: die Fassung mit mehr Strophenabständen. Sonst nur die Abstände übernehmen.
+    const besser = textKern(ausHTML) === textKern(einfach) ? ausHTML : abstaendeUebertragen(einfach, ausHTML);
+    return leerzeilenZahl(besser) > leerzeilenZahl(einfach) ? besser : einfach;
+}
+
+// Öffnet Google mit Titel, Künstler und „lyrics“ in einem neuen Tab; den Text kopiert man von dort herüber.
+$("textSuchen").addEventListener("click", () => {
+    const suche = [$("titel").value.trim(), $("kuenstler").value.trim(), "lyrics"].filter(Boolean).join(" ");
+    if (suche === "lyrics") { meldung("Bitte zuerst einen Titel eintragen.", "fehler"); return; }
+    window.open("https://www.google.com/search?q=" + encodeURIComponent(suche), "_blank", "noopener");
+});
+
+$("text").addEventListener("paste", e => {
+    const ablage = e.clipboardData;
+    if (!ablage) return;
+    const text = textAusZwischenablage(ablage.getData("text/plain"), ablage.getData("text/html"));
+    if (!text) return;
+    e.preventDefault();
+    const feld = $("text");
+    feld.setRangeText(text, feld.selectionStart, feld.selectionEnd, "end");
+    feld.dispatchEvent(new Event("input", { bubbles: true }));
+    if (text.split("\n").length >= 8 && !text.includes("\n\n")) {
+        meldung("Die Quelle liefert keine Strophenabstände. Bitte Leerzeilen von Hand setzen.", "fehler");
+    }
+});
+
+// MARK: Historie und Mitglieder (nur Admin)
+
+let adminSeite = "historie";
+let historie = [];
+let historieEnde = false;
+let konten = [];
+const AKTIONEN = { neu: "Neu", geaendert: "Geändert", geloescht: "Gelöscht", wiederhergestellt: "Wiederhergestellt", endgueltig_geloescht: "Endgültig gelöscht" };
+const ARTEN = { song: "Song", setliste: "Setliste", band: "Band", saenger: "Sänger", abschnittArt: "Abschnittsart", merkmal: "Merkmal",
+                medley: "Medley", smartfilter: "Smartfilter", archivOrdner: "Archivordner", energieNamen: "Energienamen" };
+// Interne Bezeichnungen sollen in der Historie nicht als Feldname auftauchen.
+const FELDER = { titel: "Titel", kuenstler: "Künstler", tonart: "Tonart", bpm: "BPM", taktart: "Taktart", dauerSekunden: "Dauer (s)", text: "Liedtext",
+                 abschnitte: "Akkorde", bandIDs: "Bands", merkmalIDs: "Merkmale", saenger: "Sänger", bewertung: "Bewertung", energiestufen: "Energie",
+                 name: "Name", bandID: "Band", datum: "Datum", sets: "Sets", archiviert: "Archiviert", inStatistik: "In Statistik", probe: "Probe" };
+
+async function adminOeffnen() {
+    $("admin").classList.add("offen");
+    konten = await server("GET", "/rest/v1/profile?select=id,name,ist_admin,freigegeben&order=name.asc");
+    $("hPerson").innerHTML = '<option value="">Alle Personen</option>' +
+        konten.map(k => `<option value="${k.id}">${html(k.name)}</option>`).join("");
+    await adminZeigen();
+}
+
+async function historieLaden(weiter = false) {
+    const filter = [];
+    if ($("hPerson").value) filter.push("von=eq." + $("hPerson").value);
+    if ($("hArt").value) filter.push("art=eq." + $("hArt").value);
+    if (weiter && historie.length) filter.push("nr=lt." + historie[historie.length - 1].nr);
+    const seite = await server("GET", `/rest/v1/historie?select=*&order=nr.desc&limit=50&${filter.join("&")}`);
+    historie = weiter ? historie.concat(seite) : seite;
+    historieEnde = seite.length < 50;
+}
+
+async function adminZeigen() {
+    document.querySelectorAll("#adminReiter button").forEach(b => b.classList.toggle("an", b.dataset.admin === adminSeite));
+    $("hPerson").style.display = $("hArt").style.display = adminSeite === "historie" ? "" : "none";
+    try {
+        if (adminSeite === "historie") { await historieLaden(); historieZeigen(); }
+        else if (adminSeite === "mitglieder") await mitgliederZeigen();
+        else await verbrauchZeigen();
+    } catch (fehler) {
+        $("adminInhalt").innerHTML = `<p class="hilfe">${html(fehler.message)}</p>`;
+    }
+}
+
+function historieTitel(h) {
+    const i = h.nachher || h.vorher || {};
+    return i.titel || i.name || "";
+}
+
+function historieZeigen() {
+    $("adminInhalt").innerHTML = historie.map((h, i) => `
+        <div class="hzeile" data-i="${i}">
+            <button type="button">
+                <span class="zeit">${html(new Date(h.am).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "medium" }))}</span>
+                <span>${html(h.von_name || "System")}</span>
+                <span class="aktion-${h.aktion}">${AKTIONEN[h.aktion] || html(h.aktion)}</span>
+                <span style="color: var(--gedimmt);">${ARTEN[h.art] || html(h.art)}</span>
+                <span>${html(historieTitel(h))}</span>
+            </button>
+        </div>`).join("") || '<p class="hilfe">Noch keine Einträge.</p>';
+    if (!historieEnde) $("adminInhalt").insertAdjacentHTML("beforeend", '<button class="knopf" id="hMehr">Ältere laden</button>');
+}
+
+/// Zeigt gespeicherte Werte lesbar: Namen statt IDs, Datum statt Sekunden.
+function anzeigeWert(feld, wert) {
+    if (wert === undefined || wert === null) return "–";
+    const name = (liste, id) => (liste.find(x => x.id === id) || {}).name || "unbekannt";
+    if (feld === "datum") return tagText(wert);
+    if (feld === "bandID") return name(daten.bands, wert);
+    if (feld === "bandIDs") return wert.map(id => name(daten.bands, id)).join(", ") || "–";
+    if (feld === "merkmalIDs") return wert.map(id => name(daten.merkmale, id)).join(", ") || "–";
+    if (feld === "saenger") return paare(wert).map(([id, w]) => name(daten.saenger, id) + (w.tonart ? ` (${w.tonart})` : "")).join(", ") || "–";
+    if (feld === "abschnitte") return wert.map(a => `${name(daten.abschnittArten, a.artID)}: ${a.akkorde || ""}`).join("\n") || "–";
+    if (feld === "sets") return wert.map(set => `${set.name}:\n` + set.eintraege.map((e, i) =>
+        `${i + 1}. ${(songVon(e.songID) || {}).titel || "gelöschter Song"}`).join("\n")).join("\n\n");
+    if (typeof wert === "boolean") return wert ? "Ja" : "Nein";
+    return typeof wert === "object" ? JSON.stringify(wert) : String(wert);
+}
+
+function historieDetail(zeile, h) {
+    const vorher = h.vorher || {}, nachher = h.nachher || {};
+    const felder = [...new Set([...Object.keys(vorher), ...Object.keys(nachher)])]
+        .filter(f => JSON.stringify(vorher[f]) !== JSON.stringify(nachher[f]));
+    const zeilen = (h.vorher && h.nachher ? felder : []).map(f => `<tr><td>${html(FELDER[f] || f)}</td><td>${html(anzeigeWert(f, vorher[f]))}</td><td>${html(anzeigeWert(f, nachher[f]))}</td></tr>`).join("");
+    const div = document.createElement("div");
+    div.className = "hdetail";
+    // „Zurücknehmen“ macht genau diese Änderung rückgängig: Bei einer Änderung oder Löschung kommt die Fassung von vorher zurück,
+    // ein neu angelegter Eintrag wird wieder gelöscht (er bleibt im Papierkorb und in der Historie).
+    div.innerHTML = (zeilen ? `<table><colgroup><col style="width: 130px;"></colgroup><tr><th>Feld</th><th>Vorher</th><th>Nachher</th></tr>${zeilen}</table>` : "") +
+        (h.vorher ? '<button class="knopf klein" data-fassung="vorher">Diese Änderung zurücknehmen</button> '
+                  : (h.aktion === "neu" ? '<button class="knopf klein" data-fassung="weg">Zurücknehmen (wieder löschen)</button> ' : "")) +
+        (h.nachher ? '<button class="knopf klein" data-fassung="nachher">Auf diesen Stand setzen</button>' : "") +
+        '<span class="hilfe" data-meldung style="margin-left: 10px;"></span>';
+    zeile.appendChild(div);
+}
+
+/// Spielt eine alte Fassung zurück. Das ist selbst wieder eine Änderung und steht danach in der Historie.
+async function wiederherstellen(h, fassung, meldungFeld) {
+    if (fassung === "weg") {
+        if (!confirm(`„${historieTitel(h)}“ wieder löschen? Der Eintrag wurde von ${h.von_name || "jemandem"} neu angelegt.`)) return;
+        try {
+            await server("PATCH", `/rest/v1/datensatz?id=eq.${h.datensatz_id}`, { geloescht: true });
+            meldungFeld.textContent = "Zurückgenommen ✓";
+            daten = await api("GET", "daten");
+            aufbauen();
+        } catch (fehler) { meldungFeld.textContent = fehler.message; }
+        return;
+    }
+    const inhalt = h[fassung];
+    const bands = inhalt.bandIDs || (inhalt.bandID ? [inhalt.bandID] : (h.art === "band" ? [inhalt.id] : []));
+    if (!confirm(fassung === "vorher"
+        ? `Änderung an „${historieTitel(h)}“ zurücknehmen? Es gilt dann wieder die Fassung von vorher.`
+        : `„${historieTitel(h)}“ auf diesen Stand setzen?`)) return;
+    try {
+        await server("PATCH", `/rest/v1/datensatz?id=eq.${h.datensatz_id}`, { inhalt, band_ids: bands, geloescht: false });
+        meldungFeld.textContent = "Wiederhergestellt ✓";
+        daten = await api("GET", "daten");
+        aufbauen();
+    } catch (fehler) { meldungFeld.textContent = fehler.message; }
+}
+
+/// Alle Konten: wartende zuerst. Zu jedem die Zahl seiner Änderungen und wann er zuletzt etwas geändert hat.
+async function mitgliederZeigen() {
+    konten = await server("GET", "/rest/v1/profile?select=id,name,ist_admin,freigegeben&order=name.asc");
+    const aktiv = {};
+    await Promise.all(konten.map(async k => {
+        try {
+            const letzte = await server("GET", `/rest/v1/historie?select=am,art,aktion,vorher,nachher&von=eq.${k.id}&order=nr.desc&limit=1`);
+            aktiv[k.id] = letzte[0] || null;
+        } catch (_) { aktiv[k.id] = null; }
+    }));
+    const rang = k => k.ist_admin ? 2 : (k.freigegeben ? 1 : 0);
+    const liste = konten.slice().sort((x, y) => rang(x) - rang(y) || x.name.localeCompare(y.name));
+    $("adminInhalt").innerHTML = liste.map(k => {
+        const l = aktiv[k.id];
+        const zuletzt = l ? `Zuletzt geändert: ${new Date(l.am).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })} · ${AKTIONEN[l.aktion] || l.aktion} · ${ARTEN[l.art] || l.art} „${historieTitel(l)}“`
+                          : "Hat noch nichts geändert";
+        const status = k.ist_admin ? '<span class="hilfe">Admin</span>' : (k.freigegeben ? '<span class="hilfe">Mitglied</span>' : '<span class="wartet">Wartet auf Freigabe</span>');
+        return `<div class="mzeile">
+            <span style="flex: 1;">${html(k.name || "Ohne Namen")} ${status}<small>${html(zuletzt)}</small></span>
+            <button class="knopf klein" data-verlauf="${k.id}">Änderungen zeigen</button>
+            ${k.ist_admin ? "" : `<label class="haken"><input type="checkbox" data-konto="${k.id}"${k.freigegeben ? " checked" : ""}> Freigegeben</label>`}
+        </div>`;
+    }).join("") +
+        '<p class="hilfe">Freigegebene Mitglieder sehen und bearbeiten alle Bands, die Historie sehen sie nicht. Neue Konten legen sich die Kollegen in der App selbst an (Einstellungen → Cloud → „Neues Konto anlegen“); sie erscheinen hier als „Wartet auf Freigabe“. Wer gerade online ist, lässt sich nicht anzeigen, wohl aber, wer zuletzt etwas geändert hat.</p>';
+}
+
+/// Belegter Platz in der Datenbank. Die Zahlen liefert `supabase/4-verbrauch.sql`.
+async function verbrauchZeigen() {
+    const GRENZE = 500 * 1024 * 1024;  // Datenbank im kostenlosen Tarif von Supabase
+    const gross = b => b >= 1048576 ? (b / 1048576).toFixed(1).replace(".", ",") + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
+    let v;
+    try {
+        v = await server("POST", "/rest/v1/rpc/verbrauch", {});
+    } catch (fehler) {
+        $("adminInhalt").innerHTML = '<p class="hilfe">Die Datenbank kennt die Abfrage noch nicht. Bitte einmal „supabase/4-verbrauch.sql“ im SQL-Editor von Supabase ausführen.<br>' + html(fehler.message) + "</p>";
+        return;
+    }
+    const anteil = Math.min(100, v.datenbankBytes / GRENZE * 100);
+    const arten = Object.entries(v.arten || {}).sort((x, y) => y[1] - x[1]);
+    $("adminInhalt").innerHTML = `
+        <div class="vkarte">
+            <h3>Datenbank</h3>
+            <div class="gross">${gross(v.datenbankBytes)} <span class="hilfe" style="font: 14px inherit;">von 500 MB (${anteil.toFixed(1).replace(".", ",")} %)</span></div>
+            <div class="vbalken"><i class="${anteil > 90 ? "voll" : (anteil > 70 ? "warn" : "")}" style="width: ${Math.max(1, anteil)}%"></i></div>
+            <div class="vraster">
+                <div><b>${gross(v.datenBytes)}</b><span>Songs, Setlisten und Co.</span></div>
+                <div><b>${gross(v.historieBytes)}</b><span>Historie (${v.historieZeilen} Einträge${v.historieSeit ? " seit " + new Date(v.historieSeit).toLocaleDateString("de-DE") : ""})</span></div>
+                <div><b>${v.kontenFrei} von ${v.konten}</b><span>Konten freigegeben</span></div>
+                <div><b>${v.geloescht}</b><span>gelöschte Einträge im Papierkorb</span></div>
+            </div>
+        </div>
+        <div class="vkarte">
+            <h3>Einträge</h3>
+            <div class="vraster">${arten.map(([art, n]) => `<div><b>${n}</b><span>${html(ARTEN[art] || art)}</span></div>`).join("") || '<span>Noch keine Einträge.</span>'}</div>
+        </div>
+        <p class="hilfe">Die 500 MB sind die Grenze des kostenlosen Tarifs für die Datenbank; ein Teil davon ist von Supabase selbst belegt. Jede Änderung legt eine Fassung in der Historie ab, deshalb wächst vor allem sie. Datenverkehr (5 GB im Monat frei) und die Zahl der aktiven Nutzer kennt die Datenbank nicht: Die stehen im Supabase-Dashboard unter „Usage“.</p>`;
+}
+
+$("adminKnopf").addEventListener("click", adminOeffnen);
+$("adminSchliessen").addEventListener("click", () => $("admin").classList.remove("offen"));
+$("adminReiter").addEventListener("click", e => {
+    if (e.target.dataset.admin) { adminSeite = e.target.dataset.admin; adminZeigen(); }
+});
+$("hPerson").addEventListener("change", adminZeigen);
+$("hArt").addEventListener("change", adminZeigen);
+$("adminInhalt").addEventListener("click", async e => {
+    if (e.target.id === "hMehr") { await historieLaden(true); return historieZeigen(); }
+    // Mitglieder: „Änderungen zeigen“ öffnet die Historie dieser Person.
+    if (e.target.dataset.verlauf) {
+        $("hPerson").value = e.target.dataset.verlauf;
+        $("hArt").value = "";
+        adminSeite = "historie";
+        return adminZeigen();
+    }
+    const zeile = e.target.closest(".hzeile");
+    if (!zeile) return;
+    const h = historie[Number(zeile.dataset.i)];
+    if (e.target.dataset.fassung) return wiederherstellen(h, e.target.dataset.fassung, zeile.querySelector("[data-meldung]"));
+    if (e.target.closest(".hzeile > button")) {
+        const offen = zeile.querySelector(".hdetail");
+        if (offen) offen.remove(); else historieDetail(zeile, h);
+    }
+});
+$("adminInhalt").addEventListener("change", async e => {
+    const id = e.target.dataset.konto;
+    if (!id) return;
+    try {
+        await server("POST", "/rest/v1/rpc/konto_freigeben", { p_id: id, p_frei: e.target.checked });
+        konten.find(k => k.id === id).freigegeben = e.target.checked;
+    } catch (fehler) {
+        e.target.checked = !e.target.checked;
+        alert(fehler.message);
+    }
+});
+
+if (sitzung) starten();
+markieren(false);
+
+// Eigene Vorschlagsliste für den Künstler: Die eingebaute des Browsers zeigt in Safari auf dunklen Seiten
+// schwarze Schrift auf schwarzem Grund. Die Namen kommen weiter aus der (unsichtbaren) Liste der vorhandenen Künstler.
+(function () {
+    const feld = $("kuenstler"), liste = document.createElement("div");
+    liste.id = "kuenstlerVorschlag";
+    liste.hidden = true;
+    feld.removeAttribute("list");
+    feld.setAttribute("autocomplete", "off");
+    feld.parentElement.style.position = "relative";
+    feld.parentElement.appendChild(liste);
+    function zeigen() {
+        const q = feld.value.trim().toLowerCase();
+        const treffer = !q ? [] : [...$("kuenstlerListe").options].map(o => o.value)
+            .filter(n => n.toLowerCase().includes(q) && n.toLowerCase() !== q)
+            .sort((a, b) => a.toLowerCase().indexOf(q) - b.toLowerCase().indexOf(q) || a.localeCompare(b, "de"))
+            .slice(0, 8);
+        liste.textContent = "";
+        for (const name of treffer) {
+            const knopf = document.createElement("button");
+            knopf.type = "button";
+            knopf.textContent = name;
+            liste.appendChild(knopf);
+        }
+        liste.hidden = !treffer.length;
+    }
+    feld.addEventListener("input", zeigen);
+    feld.addEventListener("focus", zeigen);
+    feld.addEventListener("blur", () => setTimeout(() => { liste.hidden = true; }, 150));
+    feld.addEventListener("keydown", e => { if (e.key === "Escape") liste.hidden = true; });
+    liste.addEventListener("mousedown", e => {
+        const knopf = e.target.closest("button");
+        if (!knopf) return;
+        e.preventDefault();
+        feld.value = knopf.textContent;
+        feld.dispatchEvent(new Event("input", { bubbles: true }));
+        liste.hidden = true;
+    });
+})();
+</script>
+</body>
+</html>

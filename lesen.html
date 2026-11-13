@@ -1,0 +1,915 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0B0C10">
+<title>StageList</title>
+<style>
+:root {
+  --grund: #0B0C10; --leiste: #101218; --karte: #15171E; --karte-hoch: #1F222B;
+  --rand: rgba(255,255,255,.08); --text: #F3F1EA; --gedimmt: #8E93A3; --jetzt: #F5A623;
+  --schrift: 18px;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { background: var(--grund); color: var(--text); -webkit-text-size-adjust: 100%; }
+body { margin: 0; font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  padding-bottom: env(safe-area-inset-bottom); }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: inherit; }
+button:focus-visible { outline: 2px solid var(--jetzt); outline-offset: 2px; }
+.mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+
+header { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 10px;
+  min-height: 56px; padding: 8px 14px; padding-top: calc(8px + env(safe-area-inset-top));
+  background: var(--leiste); border-bottom: 1px solid var(--rand); }
+header .titel { flex: 1; min-width: 0; }
+header .titel b { display: block; font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+header .titel span { display: block; font-size: 12px; color: var(--gedimmt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.knopf { min-width: 44px; height: 44px; padding: 0 12px; border-radius: 12px; background: rgba(255,255,255,.08);
+  display: inline-flex; align-items: center; justify-content: center; font-weight: 600; }
+.knopf[disabled] { opacity: .3; cursor: default; }
+
+main { max-width: 900px; margin: 0 auto; padding: 14px; }
+.hinweis { margin: 60px auto; max-width: 420px; text-align: center; color: var(--gedimmt); }
+.hinweis b { display: block; color: var(--text); font-size: 20px; margin-bottom: 8px; }
+.offline { margin: 0 0 12px; padding: 8px 12px; border-radius: 10px; background: rgba(245,166,35,.14); color: var(--jetzt); font-size: 14px; }
+
+.karte { display: block; width: 100%; margin-bottom: 12px; padding: 16px; border-radius: 16px;
+  background: var(--karte); border: 1px solid var(--rand); border-left: 5px solid var(--bandfarbe, var(--rand)); }
+.karte b { display: block; font-size: 20px; }
+.karte span { display: block; margin-top: 2px; color: var(--gedimmt); font-size: 14px; }
+h2.gruppe { margin: 18px 4px 10px; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--gedimmt); }
+h2.gruppe:first-child { margin-top: 4px; }
+
+.set { margin-bottom: 16px; border-radius: 16px; overflow: hidden; background: var(--karte); border: 1px solid var(--rand); }
+.set h2 { margin: 0; padding: 10px 14px; display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+  font-size: 17px; background: var(--karte-hoch); }
+.set h2 small { font-weight: 600; font-size: 13px; color: var(--gedimmt); }
+.zeile { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 14px; border-top: 1px solid var(--rand); }
+.zeile .nr { width: 26px; flex: none; text-align: right; color: var(--gedimmt); font-size: 13px; font-weight: 600; }
+.zeile .mitte { flex: 1; min-width: 0; }
+.zeile .mitte b { display: block; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zeile .mitte span { display: block; font-size: 13px; color: var(--gedimmt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zeile.medley { border-left: 4px solid var(--jetzt); }
+.zeile.medley + .zeile.medley.weiter { border-top-color: transparent; }
+/* Anfang und Ende eines Medleys (verbundene Songs, die ohne Stopp durchgespielt werden). */
+.medleymarke { padding: 5px 14px 4px; border-top: 1px solid var(--rand); border-left: 4px solid var(--jetzt);
+  font-size: 11px; font-weight: 800; letter-spacing: .1em; color: var(--jetzt); }
+.medleymarke.ende { border-top: 0; }
+.teiler .seite .medleymarke { padding: 4px 12px 3px; font-size: 10px; }
+/* Im Song: Hinweis, dass es ohne Stopp in den nächsten Song geht (beim Drummer groß). */
+.durch { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 16px 0 0; padding: 12px 16px; border-radius: 14px;
+  background: rgba(245,166,35,.14); color: var(--jetzt); font-weight: 700; }
+.durch .pfeil { font-size: 30px; line-height: 1; }
+.durch b { display: block; color: var(--text); font-size: 1.15em; }
+.durch.stopp { background: rgba(255,255,255,.07); color: var(--gedimmt); }
+.durch.gross { margin-top: 22px; padding: 18px; font-size: clamp(18px, 3.4vw, 28px); }
+.durch.gross .pfeil { font-size: clamp(84px, 24vw, 170px); }
+.kopf .wer .unter .marke { display: inline-block; vertical-align: 2px; }
+.saenger { flex: none; max-width: 34%; padding: 3px 9px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: 1px solid var(--farbe, var(--rand)); }
+.saenger i { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--farbe, var(--gedimmt)); }
+.modus { flex: none; min-width: 22px; padding: 1px 6px; border-radius: 6px; background: rgba(255,255,255,.1); font-size: 12px; font-weight: 700; text-align: center; }
+.hinten { flex: none; min-width: 46px; max-width: 34%; text-align: right; }
+.tonart { display: block; color: var(--jetzt); font-weight: 700; font-size: 17px; }
+
+/* Live: was gerade läuft und was als Nächstes kommt. */
+.marke { flex: none; padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.marke.jetzt { background: var(--jetzt); color: #000; }
+.marke.dann { border: 1px solid var(--jetzt); color: var(--jetzt); }
+/* Wie in der App: Der laufende Song ist weiß hinterlegt, der nächste gelb; beide mit dunkler Schrift. */
+.zeile.laeuft { background: var(--text); }
+.zeile.naechster { background: var(--jetzt); }
+.zeile.laeuft, .zeile.naechster { color: #000; border-top-color: transparent; }
+.zeile.laeuft .nr, .zeile.laeuft .mitte span, .zeile.naechster .nr, .zeile.naechster .mitte span { color: rgba(0,0,0,.68); }
+.zeile.laeuft .tonart, .zeile.naechster .tonart { color: #000; }
+.zeile.laeuft .saenger, .zeile.naechster .saenger { border-color: rgba(0,0,0,.55); }
+.zeile.laeuft .saenger i, .zeile.naechster .saenger i { background: #000; }
+.zeile.laeuft .modus, .zeile.naechster .modus { background: rgba(0,0,0,.16); }
+.zeile.laeuft .marke { background: #000; color: var(--text); border: 0; }
+.zeile.naechster .marke { background: #000; color: var(--jetzt); border: 0; }
+/* Wirklich gespielt (war im Live-Betrieb einmal der laufende Song): grau hinterlegt, graue Schrift. Übersprungene bleiben normal. */
+.zeile.vorbei, .teiler .seite .zeile.gespielt { background: #2B2E37; color: var(--gedimmt); }
+.zeile.vorbei .tonart, .zeile.gespielt .tonart { color: var(--gedimmt); }
+.zeile.vorbei .saenger, .zeile.gespielt .saenger { border-color: var(--rand); }
+.zeile.vorbei .saenger i, .zeile.gespielt .saenger i { background: var(--gedimmt); }
+.zeile.vorbei.medley { border-left-color: var(--gedimmt); }
+#folgen { gap: 7px; white-space: nowrap; }
+#folgen::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--jetzt); }
+#folgen[aria-pressed="true"] { background: var(--jetzt); color: #000; }
+#folgen[aria-pressed="true"]::before { background: #000; }
+#livebalken { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: var(--karte-hoch); border-top: 2px solid var(--jetzt); }
+#livebalken .texte { flex: 1; min-width: 0; }
+#livebalken b, #livebalken span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#livebalken b { font-size: 17px; }
+#livebalken span { font-size: 13px; color: var(--gedimmt); }
+body.live main { padding-bottom: 96px; }
+
+/* Geteilte Ansicht im Song (ab Tablet-Breite): links die Setliste, rechts der Song. */
+.teiler .seite { display: none; }
+@media (min-width: 760px) {
+  main.breit { max-width: 1280px; }
+  .teiler { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .teiler .seite { display: block; position: sticky; top: calc(70px + env(safe-area-inset-top));
+    max-height: calc(100vh - 84px - env(safe-area-inset-top)); overflow-y: auto; overscroll-behavior: contain;
+    border-radius: 16px; background: var(--karte); border: 1px solid var(--rand); }
+  .teiler .seite h2 { position: sticky; top: 0; z-index: 1; margin: 0; padding: 8px 12px; font-size: 13px; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--gedimmt); background: var(--karte-hoch); }
+  .teiler .seite .zeile { padding: 8px 12px; gap: 8px; }
+  .teiler .seite .zeile .mitte b { font-size: 15px; }
+  .teiler .seite .zeile.aktuell { background: rgba(255,255,255,.1); box-shadow: inset 4px 0 0 var(--text); }
+  /* Live geht vor: Der laufende und der nächste Song behalten ihre Farbe, auch wenn einer davon offen ist. */
+  .teiler .seite .zeile.laeuft { background: var(--text); box-shadow: none; }
+  .teiler .seite .zeile.naechster { background: var(--jetzt); box-shadow: none; }
+  .teiler .seite .zeile.aktuell.laeuft, .teiler .seite .zeile.aktuell.naechster { box-shadow: inset 4px 0 0 #000; }
+  body:not(.live) .teiler .seite .zeile.aktuell { background: rgba(245,166,35,.16); box-shadow: inset 4px 0 0 var(--jetzt); }
+  .teiler .seite .marke { font-size: 10px; padding: 1px 5px; }
+  body.live .teiler .seite { max-height: calc(100vh - 170px - env(safe-area-inset-top)); }
+  .teiler .seite .tonart { font-size: 15px; }
+  .teiler .blaettern { display: none; }
+}
+.pause { padding: 8px 14px; border-top: 1px solid var(--rand); color: var(--gedimmt); font-size: 13px; text-align: center; }
+
+.kopf { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; padding: 14px; border-radius: 16px; background: var(--karte); border: 1px solid var(--rand); }
+.kopf .gross { flex: none; text-align: center; color: var(--jetzt); }
+.kopf .gross b { display: block; font-size: 30px; line-height: 1; }
+.kopf .gross span { font-size: 10px; letter-spacing: .12em; color: var(--gedimmt); }
+.kopf .wer { flex: 1; min-width: 0; }
+.kopf .wer b { display: block; font-size: 22px; }
+.kopf .wer span { color: var(--gedimmt); }
+.kopf .tempo { flex: none; text-align: center; }
+.kopf .tempo b { display: block; font-size: 24px; line-height: 1; }
+.kopf .tempo span { font-size: 10px; letter-spacing: .12em; color: var(--gedimmt); }
+
+.inhalt { font-size: var(--schrift); }
+.block { margin-bottom: 14px; padding: 12px 14px; border-radius: 14px; background: var(--karte); border: 1px solid var(--rand); border-left: 5px solid var(--farbe, var(--rand)); }
+.block h3 { margin: 0 0 6px; font-size: .72em; letter-spacing: .08em; text-transform: uppercase; color: var(--farbe, var(--gedimmt)); display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.block h3 small { text-transform: none; letter-spacing: 0; color: var(--gedimmt); font-weight: 600; }
+.block h3 .mal { color: var(--text); }
+.block pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.45; }
+.block pre.akk { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-weight: 600; line-height: 1.6; }
+.notiz { color: #8B90A0; } .notiz.stark { color: #FFB000; } .klammer { color: #FF2D95; }
+.leer { color: var(--gedimmt); text-align: center; padding: 30px 0; }
+.blaettern { display: flex; gap: 10px; margin-top: 18px; }
+.blaettern .knopf { flex: 1; height: 52px; min-width: 0; padding: 0 12px; justify-content: flex-start; gap: 8px; overflow: hidden; }
+.blaettern .knopf.vor { justify-content: flex-end; text-align: right; }
+.blaettern .knopf span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Ansicht wählen: Sänger, Instrument, Drummer oder gemischt. */
+.wahl h1 { margin: 18px 0 14px; font-size: 24px; text-align: center; }
+.wahl .karte { padding: 20px; border-left-color: var(--jetzt); }
+.wahl .karte b { font-size: 24px; }
+.wahl .karte.gewaehlt { background: var(--karte-hoch); border-color: var(--jetzt); }
+#split[aria-pressed="true"], #blink[aria-pressed="true"] { background: var(--text); color: #000; }
+#blink { gap: 7px; white-space: nowrap; }
+#blink::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+/* Lichter abgeschaltet: Sie bleiben als dunkle Kreise stehen, damit die Seite nicht springt. */
+.dioden.aus .diode { opacity: .35; }
+#rolle { white-space: nowrap; }
+@media (max-width: 520px) { header { gap: 6px; padding-left: 8px; padding-right: 8px; } .knopf { min-width: 38px; height: 40px; padding: 0 8px; font-size: 14px; } }
+
+/* Modus der Setliste (P, 1, 2): groß im Kopf jedes Songs. */
+.kopf .modusgross { flex: none; min-width: 62px; padding: 6px 12px; border-radius: 14px; background: var(--jetzt); color: #000;
+  font-size: 44px; font-weight: 800; line-height: 1; text-align: center; }
+/* Wie in der App: neben der Tonart groß der Songname, darunter klein der Künstler und etwas größer in Gelb unser Sänger. */
+.kopf .gross b { font-size: 40px; }
+.kopf .wer b { font-size: 28px; line-height: 1.15; overflow-wrap: anywhere; }
+.kopf .wer .unter { display: block; margin-top: 3px; font-size: 14px; color: var(--gedimmt); }
+.kopf .wer .unter .singt { font-size: 19px; font-weight: 700; color: var(--jetzt); }
+@media (max-width: 520px) {
+  .kopf { gap: 10px; padding: 12px; }
+  .kopf .gross b { font-size: 30px; }
+  .kopf .wer b { font-size: 21px; }
+  .kopf .wer .unter .singt { font-size: 17px; }
+  .kopf .modusgross { min-width: 44px; padding: 5px 9px; font-size: 30px; border-radius: 11px; }
+  .kopf .tempo b { font-size: 20px; }
+}
+
+/* Drummer: vier Lichter im Tempo, darunter der Rhythmus. */
+.dioden { display: flex; justify-content: center; gap: clamp(10px, 4%, 36px); width: 100%; margin: 26px 0; }
+.diode { flex: 0 1 170px; aspect-ratio: 1; border-radius: 50%; background: #2A1D08; border: 3px solid rgba(245,166,35,.28); }
+.diode.eins { background: #2A0C0C; border-color: rgba(255,77,77,.35); }
+.diode.an { background: var(--jetzt); border-color: var(--jetzt); box-shadow: 0 0 46px 10px rgba(245,166,35,.65); }
+.diode.eins.an { background: #FF4D4D; border-color: #FF4D4D; box-shadow: 0 0 46px 10px rgba(255,77,77,.7); }
+.rhythmusgross { text-align: center; font-size: clamp(30px, 7vw, 60px); font-weight: 800; line-height: 1.15; overflow-wrap: anywhere; }
+.tempogross { margin-top: 10px; text-align: center; font-size: clamp(20px, 4vw, 32px); font-weight: 700; color: var(--jetzt); }
+
+/* Sänger im Splitmodus: links der Text, rechts die Akkorde; jede Seite rollt für sich und hat ihre eigene Schriftgröße. */
+body.geteilt main { padding-bottom: 0; }
+body.geteilt .kopf { margin-bottom: 10px; padding: 10px 14px; }
+body.geteilt .blaettern { margin: 0 0 10px; }
+body.geteilt .blaettern .knopf { height: 44px; }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 600px) and (orientation: portrait) { .split { grid-template-columns: 1fr; } }
+.feld { min-width: 0; height: 60vh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y;
+  padding: 8px; border-radius: 16px; border: 1px solid var(--rand); background: rgba(255,255,255,.02); }
+.feld h4 { margin: 0 0 8px 4px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--gedimmt); }
+.feld .block:last-child { margin-bottom: 0; }
+</style>
+</head>
+<body>
+<header>
+  <button class="knopf" id="zurueck" aria-label="Zurück" hidden>‹</button>
+  <div class="titel"><b id="kopfTitel">StageList</b><span id="kopfUnter"></span></div>
+  <button class="knopf" id="folgen" aria-pressed="false" hidden>Live</button>
+  <button class="knopf" id="split" aria-pressed="false" hidden>Split</button>
+  <button class="knopf" id="blink" aria-pressed="true" hidden>Blink</button>
+  <button class="knopf" id="kleiner" aria-label="Schrift kleiner" hidden>A−</button>
+  <button class="knopf" id="groesser" aria-label="Schrift größer" hidden>A+</button>
+  <button class="knopf" id="rolle" aria-label="Ansicht wechseln" hidden></button>
+  <button class="knopf" id="neuLaden" aria-label="Neu laden">↻</button>
+</header>
+<main id="haupt"><div class="hinweis">Lädt …</div></main>
+<button id="livebalken" hidden><span class="marke jetzt">Live</span><span class="texte"><b id="liveJetzt"></b><span id="liveDann"></span></span><span aria-hidden="true">›</span></button>
+
+<script>
+"use strict";
+// Lokal (Testserver) spricht die Seite mit ihrem eigenen Ursprung, sonst mit der Cloud.
+const SERVER = ["127.0.0.1", "localhost"].includes(location.hostname) ? location.origin : "https://ibvuuiznqhlqkfrhwvae.supabase.co";
+// Öffentlicher Schlüssel der Cloud (für Apps gedacht, nicht geheim). Die Berechtigung ist der Schlüssel im Link.
+const APP_SCHLUESSEL = "sb_publishable_DesGCN1lZxybGuGMwiMkKA_2G7aDf6b";
+const FARBEN = { koralle: "#E86A9A", tuerkis: "#3E9BD9", lila: "#9B6DF0", gelb: "#F5A623", gruen: "#4ADE80", blau: "#2E9BD6" };
+const TEXTFARBEN = { pink: "#FF5CA8", blau: "#2FC4F2", gruen: "#4ADE80", gelb: "#FFD60A", orange: "#FF9F40", rot: "#FF5A5A", lila: "#B48CFF" };
+
+let daten = null;      // letzte Antwort des Servers
+let veraltet = false;  // gezeigt wird ein gemerkter Stand, weil der Server nicht erreichbar war
+let fehlerText = "";
+let gezeigterEintrag = "";  // Song, der gerade offen ist
+let live = null;            // Live-Stand der Band: { setlisteID, aktuellID, naechsterID } oder null
+let folgen = false;         // „Live folgen“: Die Seite springt von selbst zum laufenden Song
+try { folgen = localStorage.getItem("stagelist-folgen") === "1"; } catch (_) {}
+let pulsFehlt = false;      // Die Datenbank kennt die schnelle Abfrage (noch) nicht
+
+// Ansicht je Gerät: Jeder wählt einmal, was er sehen will, und kann es oben jederzeit umstellen.
+const ROLLEN = {
+  saenger: ["Sänger", "Der Liedtext. Mit „Split“ stehen die Akkorde daneben."],
+  akkorde: ["Instrument", "Die Akkorde, dazu Sänger und Tonart groß."],
+  drummer: ["Drummer", "Vier Lichter im Tempo und der Rhythmus."],
+  mix: ["Gemischt", "Text und Akkorde abwechselnd."]
+};
+let rolle = "", wahlOffen = false, split = false, feldGroesse = { text: 18, akkorde: 18 };
+let blinken = true;  // Drummer: Die Tempo-Lichter laufen; mit dem Schalter „Blink“ lassen sie sich abschalten.
+try {
+  blinken = localStorage.getItem("stagelist-blinken") !== "0";
+  rolle = localStorage.getItem("stagelist-rolle") || "";
+  split = localStorage.getItem("stagelist-split") === "1";
+  Object.assign(feldGroesse, JSON.parse(localStorage.getItem("stagelist-felder") || "{}"));
+} catch (_) {}
+// Was ein Link hergibt: Nur der Link „Text und Akkorde“ bekommt vom Server beides geliefert.
+function rollenFuerLink() {
+  return daten.art === "beides" ? ["saenger", "akkorde", "drummer", "mix"] : (daten.art === "text" ? ["saenger", "drummer"] : ["akkorde", "drummer"]);
+}
+function aktiveRolle() { return daten && rollenFuerLink().includes(rolle) ? rolle : ""; }
+// Drummer: Beginn des Taktes und Tempo der Lichter.
+let taktStart = 0, taktBpm = 0;
+
+// ---- Adresse: #k=Schlüssel&l=Setliste&e=Eintrag -------------------------------------------------
+function ort() {
+  const p = new URLSearchParams(location.hash.slice(1));
+  return { k: p.get("k") || "", l: p.get("l") || "", e: p.get("e") || "" };
+}
+function gehe(l, e, ersetzen) {
+  const p = new URLSearchParams({ k: ort().k });
+  if (l) p.set("l", l);
+  if (e) p.set("e", e);
+  const ziel = "#" + p.toString();
+  if (ersetzen) { history.replaceState(null, "", ziel); zeigen(); } else { location.hash = ziel; }
+}
+
+// ---- Laden ------------------------------------------------------------------------------------
+function speicherName() { return "stagelist-lesen-" + ort().k.slice(0, 8); }
+
+async function laden() {
+  const k = ort().k;
+  if (k.length < 32) { daten = null; fehlerText = "link"; zeigen(); return; }
+  try {
+    const antwort = await fetch(SERVER + "/rest/v1/rpc/lese_ansicht", {
+      method: "POST", cache: "no-store",
+      headers: { "Content-Type": "application/json", apikey: APP_SCHLUESSEL },
+      body: JSON.stringify({ p_schluessel: k })
+    });
+    if (!antwort.ok) throw new Error("Server " + antwort.status);
+    const neu = await antwort.json();
+    if (!neu) {
+      // Der Link wurde erneuert oder abgeschaltet: Auch der gemerkte Stand verschwindet.
+      daten = null; fehlerText = "ungueltig";
+      try { localStorage.removeItem(speicherName()); } catch (_) {}
+    } else {
+      daten = neu; veraltet = false; fehlerText = "";
+      try { localStorage.setItem(speicherName(), JSON.stringify(neu)); } catch (_) {}
+    }
+  } catch (_) {
+    // Kein Netz: den zuletzt gesehenen Stand dieses Geräts zeigen.
+    if (!daten) { try { daten = JSON.parse(localStorage.getItem(speicherName()) || "null"); } catch (_) {} }
+    veraltet = !!daten;
+    fehlerText = daten ? "" : "netz";
+  }
+  zeigen();
+}
+
+// Schnelle Abfrage alle paar Sekunden: Hat sich etwas geändert, wird neu geladen; dazu der Live-Stand.
+async function puls() {
+  const k = ort().k;
+  if (k.length < 32 || !daten) return laden();
+  let neu;
+  try {
+    const antwort = await fetch(SERVER + "/rest/v1/rpc/lese_puls", {
+      method: "POST", cache: "no-store",
+      headers: { "Content-Type": "application/json", apikey: APP_SCHLUESSEL },
+      body: JSON.stringify({ p_schluessel: k })
+    });
+    if (antwort.status === 404) { pulsFehlt = true; return; }
+    if (!antwort.ok) return;
+    neu = await antwort.json();
+  } catch (_) { return; }  // kein Netz: Der gezeigte Stand bleibt stehen
+  if (!neu) return laden();  // Link erneuert oder abgeschaltet
+  const liveNeu = neu.live || null, liveGeaendert = JSON.stringify(liveNeu) !== JSON.stringify(live);
+  live = liveNeu;
+  if (neu.nr !== daten.nr || veraltet) { await laden(); if (liveGeaendert) liveFolgen(); }
+  else if (liveGeaendert) { if (!liveFolgen()) zeigen(); }
+}
+// Folgt die Seite gerade, springt sie zum laufenden Song (vor dem ersten Song: zum nächsten).
+function liveFolgen() {
+  if (!folgen || !live) return false;
+  const liste = setliste(live.setlisteID), ziel = live.aktuellID || live.naechsterID;
+  if (!liste || !ziel || !alleEintraege(liste).some(e => klein(e.id) === klein(ziel))) return false;
+  const o = ort();
+  if (klein(o.l) === klein(liste.id) && klein(o.e) === klein(ziel)) return false;
+  gehe(liste.id, ziel, !!o.e);
+  return true;
+}
+// Ob der Song an diesem Abend schon lief. Die Band meldet die Liste; übersprungene Songs stehen nicht darin.
+function gespielt(l, e) {
+  return !!live && klein(live.setlisteID) === klein(l.id) && (live.gespieltIDs || []).some(id => klein(id) === klein(e.id));
+}
+// Lage eines Eintrags in seinem Medley: Songs direkt hintereinander mit derselben Medley-Nummer gehören zusammen.
+// Liefert null (kein Medley) oder { start, ende, platz, anzahl, danach } – `danach` ist der nächste Song desselben Medleys.
+function medleyLage(eintraege, i) {
+  const id = eintraege[i].medleyID;
+  if (!id) return null;
+  let a = i, b = i;
+  while (a > 0 && eintraege[a - 1].medleyID === id) a--;
+  while (b + 1 < eintraege.length && eintraege[b + 1].medleyID === id) b++;
+  if (a === b) return null;
+  return { start: i === a, ende: i === b, platz: i - a + 1, anzahl: b - a + 1, danach: i < b ? eintraege[i + 1] : null };
+}
+function medleyMarkeHTML(lage, vor) {
+  if (!lage) return "";
+  if (vor) return lage.start ? '<div class="medleymarke">MEDLEY-START · ' + lage.anzahl + " Songs ohne Stopp</div>" : "";
+  return lage.ende ? '<div class="medleymarke ende">MEDLEY-ENDE</div>' : "";
+}
+// „laeuft“, „naechster“ oder „“ für einen Eintrag der Setliste.
+function liveMarke(l, e) {
+  if (!live || klein(live.setlisteID) !== klein(l.id)) return "";
+  return klein(e.id) === klein(live.aktuellID) ? "laeuft" : (klein(e.id) === klein(live.naechsterID) ? "naechster" : "");
+}
+function markeHTML(art) {
+  return art === "laeuft" ? '<span class="marke jetzt">Live</span>' : (art === "naechster" ? '<span class="marke dann">Next</span>' : "");
+}
+// Knopf „Live“ im Kopf und Balken unten; beide gibt es nur, solange die Band live ist.
+function liveZeigen() {
+  const liste = live ? setliste(live.setlisteID) : null, an = !!(daten && liste);
+  const knopf = document.getElementById("folgen"), balken = document.getElementById("livebalken");
+  knopf.hidden = balken.hidden = !an;
+  document.body.classList.toggle("live", an);
+  if (!an) return;
+  knopf.setAttribute("aria-pressed", folgen ? "true" : "false");
+  knopf.setAttribute("aria-label", folgen ? "Live folgen ist an" : "Live folgen ist aus");
+  const titel = id => { const e = alleEintraege(liste).find(x => klein(x.id) === klein(id)); return e && song(e.songID) ? song(e.songID).titel : ""; };
+  const jetzt = titel(live.aktuellID), dann = titel(live.naechsterID);
+  document.getElementById("liveJetzt").textContent = jetzt ? jetzt : "Gleich geht es los";
+  document.getElementById("liveDann").textContent = dann ? "Next: " + dann : (jetzt ? "Letzter Song" : liste.name);
+}
+
+// ---- Hilfen -----------------------------------------------------------------------------------
+function html(text) {
+  return String(text ?? "").replace(/[&<>"']/g, z => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[z]));
+}
+function klein(id) { return String(id || "").toLowerCase(); }
+function farbe(name) { return FARBEN[name] || ""; }
+// Die App speichert Daten als Sekunden seit dem 1.1.2001.
+function datumText(sekunden, mitTag = true) {
+  if (typeof sekunden !== "number") return "ohne Datum";
+  const d = new Date((sekunden + 978307200) * 1000);
+  return d.toLocaleDateString("de-DE", mitTag ? { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" } : { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+function dauerText(sekunden) {
+  const m = Math.round(sekunden / 60);
+  return m >= 60 ? Math.floor(m / 60) + " h " + (m % 60) + " min" : m + " min";
+}
+function song(id) { return (daten.songs || {})[klein(id)]; }
+function saenger(id) { return id ? (daten.saenger || {})[klein(id)] : null; }
+function setliste(id) { return (daten.setlisten || []).find(s => klein(s.id) === klein(id)); }
+function alleEintraege(liste) { return liste.sets.flatMap(s => s.eintraege); }
+
+// ---- Transponieren (wie in der App) -------------------------------------------------------------
+const KREUZE = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const BES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+const B_TONARTEN = new Set(["F", "Bb", "Eb", "Ab", "Db", "Gb", "Dm", "Gm", "Cm", "Fm", "Bbm", "Ebm"]);
+function halbton(note) { const i = KREUZE.indexOf(note); return i >= 0 ? i : BES.indexOf(note); }
+function wurzel(tonart) { return /^[A-G][#b]/.test(tonart) ? tonart.slice(0, 2) : tonart.slice(0, 1); }
+function halbtoene(von, nach) {
+  if (!nach) return 0;
+  const a = halbton(wurzel(von || "")), b = halbton(wurzel(nach));
+  if (a < 0 || b < 0) return 0;
+  const abstand = (b - a + 12) % 12;
+  return abstand > 6 ? abstand - 12 : abstand;
+}
+// Die Leseseite schreibt die Noten deutsch: „H“ statt „B“. „Bb“ bleibt „Bb“, damit es eindeutig ist.
+// Zwischen zwei Taktstrichen `|` ist alles ein Akkord (`innen`). Außerhalb davon gilt nur als Akkord, was wie einer
+// aussieht: Wörter wie „Bridge“ oder „Break“ am Rand einer Akkordzeile bleiben stehen.
+const AKKORD_ZUSATZ = /^(?:maj|min|dim|aug|sus|add|m|M|[0-9]|[#b+\-°()])*$/;
+function akkord(wort, schritte, mitB, innen) {
+  const t = /^([A-G][#b]?)([a-zA-Z0-9+\-°()]*)(?:\/([A-G][#b]?))?$/.exec(wort);
+  if (!t || (!innen && !AKKORD_ZUSATZ.test(t[2]))) return wort;
+  const deutsch = note => note === "B" ? "H" : note;
+  const schieben = note => { const i = halbton(note); return deutsch(i < 0 || schritte % 12 === 0 ? note : (mitB ? BES : KREUZE)[(i + schritte % 12 + 12) % 12]); };
+  return schieben(t[1]) + t[2] + (t[3] ? "/" + schieben(t[3]) : "");
+}
+// Eine Tonart für die Anzeige („Bm“ wird „Hm“).
+function tonartText(tonart) { return akkord(String(tonart || ""), 0, false, true); }
+// Zerlegt eine Zeile in Inhalt, Klammern `( )` und Notizen (`*`, `**` bis zum nächsten `|`).
+function teile(zeile) {
+  const ergebnis = []; let aktuell = "", i = 0;
+  const ab = () => { if (aktuell) { ergebnis.push({ art: "inhalt", text: aktuell }); aktuell = ""; } };
+  while (i < zeile.length) {
+    const z = zeile[i];
+    if (z === "*") {
+      ab(); let ende = i;
+      while (ende < zeile.length && zeile[ende] === "*") ende++;
+      const stark = ende - i >= 2;
+      while (ende < zeile.length && zeile[ende] !== "|") ende++;
+      ergebnis.push({ art: stark ? "stark" : "notiz", text: zeile.slice(i, ende) }); i = ende;
+    } else if (z === "(") {
+      ab(); const zu = zeile.indexOf(")", i); const ende = zu < 0 ? zeile.length : zu + 1;
+      ergebnis.push({ art: "klammer", text: zeile.slice(i, ende) }); i = ende;
+    } else { aktuell += z; i++; }
+  }
+  ab(); return ergebnis;
+}
+function akkordeHTML(text, schritte, mitB) {
+  return String(text || "").split("\n").map(zeile => {
+    // Erster und letzter Taktstrich der Zeile: Was dazwischen steht, ist ein Akkord.
+    const erster = zeile.indexOf("|"), letzter = zeile.lastIndexOf("|");
+    let pos = 0;
+    return teile(zeile).map(t => {
+    const start = pos;
+    pos += t.text.length;
+    if (t.art === "inhalt") {
+      const fertig = t.text.replace(/[^\s|]+/g, (w, ab) =>
+        akkord(w, schritte, mitB, erster >= 0 && start + ab > erster && start + ab < letzter));
+      return html(fertig);
+    }
+    if (t.art === "klammer") return '<span class="klammer">' + html(t.text) + "</span>";
+    return '<span class="notiz' + (t.art === "stark" ? " stark" : "") + '">' + html(t.text.replace(/^\*+\s?/, "")) + "</span>";
+    }).join("");
+  }).join("\n");
+}
+
+// ---- Liedtext: Farbmarken `[pink]…[/]`, Überschriften `# Strofa`, Notizen ----------------------
+function textHTML(text) {
+  let aus = "", offen = false, pos = 0;
+  const muster = /\[(pink|blau|gruen|gelb|orange|rot|lila)\]|\[\/\]/g;
+  const stueck = roh => roh.split("\n").map(zeile => teile(zeile).map(t =>
+    t.art === "notiz" || t.art === "stark"
+      ? '<span class="notiz' + (t.art === "stark" ? " stark" : "") + '">' + html(t.text.replace(/^\*+\s?/, "")) + "</span>"
+      : html(t.text)).join("")).join("\n");
+  let m;
+  while ((m = muster.exec(text))) {
+    aus += stueck(text.slice(pos, m.index));
+    if (offen) { aus += "</span>"; offen = false; }
+    if (m[1]) { aus += '<span style="color:' + TEXTFARBEN[m[1]] + '">'; offen = true; }
+    pos = muster.lastIndex;
+  }
+  aus += stueck(text.slice(pos));
+  return aus + (offen ? "</span>" : "");
+}
+// Zerlegt den Text an den `#`-Zeilen in Blöcke mit Überschrift.
+function textBloecke(text) {
+  const bloecke = []; let aktuell = { titel: null, zeilen: [] };
+  for (const zeile of String(text || "").split("\n")) {
+    if (zeile.startsWith("#")) {
+      if (aktuell.titel !== null || aktuell.zeilen.join("").trim()) bloecke.push(aktuell);
+      aktuell = { titel: zeile.replace(/^#+/, "").trim(), zeilen: [] };
+    } else aktuell.zeilen.push(zeile);
+  }
+  if (aktuell.titel !== null || aktuell.zeilen.join("").trim()) bloecke.push(aktuell);
+  return bloecke.map(b => ({ titel: b.titel, text: b.zeilen.join("\n").replace(/^\n+|\s+$/g, "") }));
+}
+function artVon(abschnitt) { return (daten.abschnittArten || {})[klein(abschnitt.artID)] || { name: "", farbe: "" }; }
+function artSchluessel(name) { return String(name || "").trim().split(/\s+/)[0].toLowerCase(); }
+function farbeZuTitel(titel) {
+  const s = artSchluessel(titel);
+  const art = Object.values(daten.abschnittArten || {}).find(a => artSchluessel(a.name) === s);
+  return art ? farbe(art.farbe) : "";
+}
+
+function textBlockHTML(b) {
+  const f = farbeZuTitel(b.titel);
+  return '<div class="block"' + (f ? ' style="--farbe:' + f + '"' : "") + ">" + (b.titel ? "<h3>" + html(b.titel) + "</h3>" : "")
+    + "<pre>" + textHTML(b.text) + "</pre></div>";
+}
+function akkordBlockHTML(a, schritte, mitB) {
+  const art = artVon(a), f = farbe(art.farbe);
+  return '<div class="block"' + (f ? ' style="--farbe:' + f + '"' : "") + "><h3>" + html(art.name || "Abschnitt")
+    + (a.wiederholungen > 1 ? '<span class="mal">×' + html(a.wiederholungen) + "</span>" : "")
+    + (a.hinweis ? "<small>" + html(a.hinweis) + "</small>" : "") + "</h3>"
+    + '<pre class="akk">' + akkordeHTML(a.akkorde, schritte, mitB) + "</pre></div>";
+}
+// Text und Akkorde abwechselnd wie in der App: Strofa zu Strofa, Refren zu Refren; die Akkorde geben die
+// Reihenfolge vor. Text ohne passende Akkord-Sektion steht am Ende.
+function mixHTML(s, schritte, mitB) {
+  const bloecke = textBloecke(s.text), abschnitte = (s.abschnitte || []).slice();
+  const arten = abschnitte.map(a => artSchluessel(artVon(a).name));
+  // Leeres Akkordfeld einer wiederholten Sektion: die Akkorde der vorigen (sonst nächsten) derselben Art zeigen.
+  abschnitte.forEach((a, i) => {
+    if (String(a.akkorde || "").trim()) return;
+    let quelle = null;
+    for (let j = i - 1; j >= 0 && !quelle; j--) if (arten[j] === arten[i] && String(abschnitte[j].akkorde || "").trim()) quelle = abschnitte[j];
+    for (let j = i + 1; j < abschnitte.length && !quelle; j++) if (arten[j] === arten[i] && String(abschnitte[j].akkorde || "").trim()) quelle = abschnitte[j];
+    if (quelle) abschnitte[i] = Object.assign({}, a, { akkorde: quelle.akkorde });
+  });
+  const texte = {};
+  bloecke.forEach(b => { if (b.titel) (texte[artSchluessel(b.titel)] ||= []).push(b); });
+  const textZuerst = arten.length ? !(texte[arten[0]] || []).length : false;
+  const verwendet = {}, benutzt = new Set(); let aus = "";
+  abschnitte.forEach((a, i) => {
+    const liste = texte[arten[i]] || [], n = verwendet[arten[i]] || 0;
+    const ak = akkordBlockHTML(a, schritte, mitB);
+    if (n < liste.length) {
+      const tx = textBlockHTML(liste[n]); benutzt.add(liste[n]); verwendet[arten[i]] = n + 1;
+      aus += textZuerst ? tx + ak : ak + tx;
+    } else aus += ak;
+  });
+  bloecke.forEach(b => { if (!benutzt.has(b) && (b.text || b.titel)) aus += textBlockHTML(b); });
+  return aus;
+}
+
+// ---- Anzeigen ---------------------------------------------------------------------------------
+const haupt = document.getElementById("haupt");
+function kopf(titel, unter, zurueck, schrift, splitMoeglich = false, imSong = false) {
+  document.getElementById("kopfTitel").textContent = titel;
+  document.getElementById("kopfUnter").textContent = unter || "";
+  document.getElementById("zurueck").hidden = !zurueck;
+  document.getElementById("kleiner").hidden = document.getElementById("groesser").hidden = !schrift;
+  const splitKnopf = document.getElementById("split"), rolleKnopf = document.getElementById("rolle"), r = aktiveRolle();
+  splitKnopf.hidden = !splitMoeglich;
+  splitKnopf.setAttribute("aria-pressed", split ? "true" : "false");
+  const blinkKnopf = document.getElementById("blink");
+  blinkKnopf.hidden = !(imSong && r === "drummer") || wahlOffen;
+  blinkKnopf.setAttribute("aria-pressed", blinken ? "true" : "false");
+  blinkKnopf.setAttribute("aria-label", blinken ? "Tempo-Lichter sind an" : "Tempo-Lichter sind aus");
+  rolleKnopf.hidden = !r || wahlOffen;
+  rolleKnopf.textContent = r ? ROLLEN[r][0] : "";
+  // Im Song ist der Platz knapp; die Seite aktualisiert sich dort ohnehin alle paar Sekunden von selbst.
+  document.getElementById("neuLaden").hidden = imSong;
+  document.title = titel === "StageList" ? titel : titel + " · StageList";
+}
+function standText() {
+  if (!daten || !daten.stand) return "";
+  const d = new Date(daten.stand);
+  return "Stand " + d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }) + " " + d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+}
+function offlineHTML() { return veraltet ? '<div class="offline">Keine Verbindung. Gezeigt wird der zuletzt geladene ' + html(standText()) + ".</div>" : ""; }
+
+function zeigen() {
+  liveZeigen();
+  document.body.classList.remove("geteilt");
+  if (!daten) {
+    wachHalten(false);
+    haupt.classList.remove("breit");
+    kopf("StageList", "", false, false);
+    const texte = {
+      link: ["Link unvollständig", "Bitte den Link genau so öffnen, wie du ihn bekommen hast."],
+      ungueltig: ["Dieser Link gilt nicht mehr", "Die Band hat den Link erneuert. Bitte nach dem neuen Link fragen."],
+      netz: ["Keine Verbindung", "Die Setlisten konnten nicht geladen werden. Bitte später noch einmal versuchen."]
+    }[fehlerText] || ["Lädt …", ""];
+    haupt.innerHTML = '<div class="hinweis"><b>' + html(texte[0]) + "</b>" + html(texte[1]) + "</div>";
+    return;
+  }
+  if (wahlOffen || !aktiveRolle()) return wahlZeigen();
+  const o = ort(), liste = o.l ? setliste(o.l) : null;
+  const eintrag = liste && o.e ? alleEintraege(liste).find(e => klein(e.id) === klein(o.e)) : null;
+  if (eintrag && song(eintrag.songID)) return songZeigen(liste, eintrag);
+  wachHalten(false);
+  gezeigterEintrag = "";
+  haupt.classList.remove("breit");
+  if (liste) return setlisteZeigen(liste);
+  uebersichtZeigen();
+}
+
+// Erste Seite auf einem neuen Gerät, später über den Knopf oben rechts: Wer bin ich in der Band?
+function wahlZeigen() {
+  wachHalten(false);
+  gezeigterEintrag = "";
+  haupt.classList.remove("breit");
+  const r = aktiveRolle();
+  kopf("StageList", "Ansicht wählen", !!r, false);
+  haupt.innerHTML = offlineHTML() + '<div class="wahl"><h1>Was willst du sehen?</h1>' + rollenFuerLink().map(x =>
+    '<button class="karte' + (x === r ? " gewaehlt" : "") + '" data-rolle="' + x + '"><b>' + html(ROLLEN[x][0]) + "</b><span>" + html(ROLLEN[x][1]) + "</span></button>").join("")
+    + '<div class="hinweis" style="margin:18px auto">Das Gerät merkt sich die Wahl. Umstellen kannst du jederzeit oben rechts.</div></div>';
+}
+
+function uebersichtZeigen() {
+  kopf("StageList", ROLLEN[aktiveRolle()][0] + " · " + standText(), false, false);
+  const listen = daten.setlisten || [];
+  if (!listen.length) { haupt.innerHTML = offlineHTML() + '<div class="hinweis"><b>Keine aktive Setliste</b>Sobald die Band eine Setliste anlegt, erscheint sie hier.</div>'; return; }
+  const karte = l => {
+    const band = (daten.bands || {})[klein(l.bandID)], anzahl = alleEintraege(l).length;
+    return '<button class="karte" data-liste="' + html(l.id) + '"' + (band && farbe(band.farbe) ? ' style="--bandfarbe:' + farbe(band.farbe) + '"' : "") + ">"
+      + "<b>" + html(l.name || "Ohne Namen") + (live && klein(live.setlisteID) === klein(l.id) ? ' <span class="marke jetzt">Live</span>' : "") + "</b><span>" + html(datumText(l.datum)) + (band ? " · " + html(band.name) : "")
+      + " · " + l.sets.length + (l.sets.length === 1 ? " Set" : " Sets") + " · " + anzahl + (anzahl === 1 ? " Song" : " Songs") + "</span></button>";
+  };
+  // Erst die Gigs, darunter unter eigener Überschrift die Proben.
+  const gigs = listen.filter(l => !l.probe), proben = listen.filter(l => l.probe);
+  haupt.innerHTML = offlineHTML()
+    + (gigs.length && proben.length ? '<h2 class="gruppe">Setlisten</h2>' : "") + gigs.map(karte).join("")
+    + (proben.length ? '<h2 class="gruppe">Proben</h2>' + proben.map(karte).join("") : "");
+}
+
+function setlisteZeigen(l) {
+  const band = (daten.bands || {})[klein(l.bandID)];
+  kopf(l.name || "Setliste", datumText(l.datum) + (band ? " · " + band.name : "") + " · " + standText(), true, false);
+  let nr = 0;
+  haupt.innerHTML = offlineHTML() + l.sets.map((set, k) => {
+    const sekunden = set.eintraege.reduce((s, e) => s + ((song(e.songID) || {}).dauerSekunden || 0), 0);
+    const zeilen = set.eintraege.map((e, i) => {
+      nr++;
+      const s = song(e.songID), sg = saenger(e.saengerID);
+      const lage = medleyLage(set.eintraege, i), medley = !!lage, weiter = medley && !lage.start;
+      if (!s) return '<div class="zeile"><span class="nr">' + nr + '</span><span class="mitte"><span>Song nicht mehr vorhanden</span></span></div>';
+      // Der Rhythmus steht direkt vor dem Tempo.
+      const unter = [s.kuenstler, (s.rhythmus || []).join(", "), s.bpm ? s.bpm + " bpm" : ""].filter(Boolean).join(" · ");
+      const marke = liveMarke(l, e);
+      return medleyMarkeHTML(lage, true) + '<button class="zeile' + (medley ? " medley" : "") + (weiter ? " weiter" : "") + (marke ? " " + marke : (gespielt(l, e) ? " vorbei" : ""))
+        + '" data-eintrag="' + html(e.id) + '">'
+        + '<span class="nr">' + nr + "</span>"
+        + '<span class="mitte"><b>' + html(s.titel) + "</b><span>" + html(unter) + "</span></span>"
+        + markeHTML(marke)
+        + (e.modus ? '<span class="modus">' + html(e.modus) + "</span>" : "")
+        + (sg ? '<span class="saenger"' + (farbe(sg.farbe) ? ' style="--farbe:' + farbe(sg.farbe) + '"' : "") + "><i></i>" + html(sg.name) + "</span>"
+              : (e.stimme ? '<span class="saenger"><i></i>' + (e.stimme === "m" ? "M" : "W") + "</span>" : ""))
+        + hintenHTML(e, s) + "</button>" + medleyMarkeHTML(lage, false);
+    }).join("");
+    return '<section class="set"><h2>' + html(set.name || "Set " + (k + 1)) + "<small>" + set.eintraege.length + (set.eintraege.length === 1 ? " Song" : " Songs")
+      + (sekunden ? " · " + dauerText(sekunden) : "") + "</small></h2>" + (zeilen || '<div class="pause">Noch keine Songs</div>')
+      + (set.pauseMinuten > 0 ? '<div class="pause">Pause ' + html(set.pauseMinuten) + " min</div>" : "") + "</section>";
+  }).join("");
+}
+
+// Ende jeder Setlisten-Zeile: die Tonart, in der der Song in dieser Setliste gespielt wird.
+function hintenHTML(e, s) {
+  return '<span class="hinten"><span class="tonart mono">' + html(tonartText(e.tonart || s.tonart || "")) + "</span></span>";
+}
+// Linke Spalte der geteilten Ansicht: die ganze Setliste, der offene Song markiert, wirklich gespielte grau.
+function seiteHTML(l, aktuell) {
+  let nr = 0;
+  return l.sets.map((set, k) => "<h2>" + html(set.name || "Set " + (k + 1)) + "</h2>" + set.eintraege.map((e, i) => {
+    nr++;
+    const s = song(e.songID);
+    if (!s) return "";
+    const ist = e.id === aktuell.id, marke = liveMarke(l, e), lage = medleyLage(set.eintraege, i);
+    return medleyMarkeHTML(lage, true) + '<button class="zeile' + (lage ? " medley" : "") + (ist ? " aktuell" : "") + (marke ? " " + marke : (gespielt(l, e) ? " gespielt" : "")) + '" data-eintrag="' + html(e.id) + '"'
+      + (ist ? ' aria-current="true"' : "") + '><span class="nr">' + nr + "</span>"
+      + '<span class="mitte"><b>' + html(s.titel) + "</b><span>" + html([(s.rhythmus || []).join(", "), s.bpm ? s.bpm + " bpm" : "", (saenger(e.saengerID) || {}).name].filter(Boolean).join(" · ")) + "</span></span>"
+      + markeHTML(marke) + hintenHTML(e, s) + "</button>" + medleyMarkeHTML(lage, false);
+  }).join("")).join("");
+}
+
+function songZeigen(l, e) {
+  const s = song(e.songID), sg = saenger(e.saengerID), alle = alleEintraege(l).filter(x => song(x.songID)), r = aktiveRolle();
+  const platz = alle.findIndex(x => x.id === e.id), davor = alle[platz - 1], danach = alle[platz + 1];
+  const tonart = e.tonart || s.tonart || "", schritte = halbtoene(s.tonart || "", e.tonart), mitB = B_TONARTEN.has(tonart);
+  const bpm = Number(s.bpm) || 0, rhythmus = (s.rhythmus || []).join(", ");
+  const taktart = s.taktart && s.taktart !== "4/4" ? " · " + html(s.taktart) : "";
+  // Split gibt es nur für Sänger, und nur wenn der Link auch die Akkorde liefert.
+  const splitMoeglich = r === "saenger" && daten.art === "beides", geteilt = splitMoeglich && split;
+  kopf(s.titel, l.name + " · Song " + (platz + 1) + " von " + alle.length, true, !geteilt && r !== "drummer", splitMoeglich, true);
+  document.body.classList.toggle("geteilt", geteilt);
+  wachHalten(r === "drummer");
+
+  // Medley: Geht es ohne Stopp in den nächsten Song, sagt das ein Pfeil (beim Drummer groß unter dem Tempo).
+  const eigenesSet = l.sets.find(x => x.eintraege.some(y => y.id === e.id));
+  const lage = eigenesSet ? medleyLage(eigenesSet.eintraege, eigenesSet.eintraege.findIndex(y => y.id === e.id)) : null;
+  const durchHTML = gross => {
+    if (!lage) return "";
+    const folgt = lage.danach ? song(lage.danach.songID) : null;
+    if (folgt) return '<div class="durch' + (gross ? " gross" : "") + '"><span class="pfeil" aria-hidden="true">➜</span><span>Ohne Stopp weiter<b>'
+      + html(folgt.titel) + (folgt.bpm ? " · " + html(folgt.bpm) + " bpm" : "") + "</b></span></div>";
+    return '<div class="durch stopp' + (gross ? " gross" : "") + '"><span class="pfeil" aria-hidden="true">■</span><span>Medley-Ende</span></div>';
+  };
+  const hatText = String(s.text || "").trim(), hatAkkorde = (s.abschnitte || []).length;
+  const leer = was => '<div class="leer">Zu diesem Song gibt es noch ' + was + ".</div>";
+  const textTeil = () => hatText ? textBloecke(s.text).map(textBlockHTML).join("") : leer("keinen Text");
+  const akkordTeil = () => hatAkkorde ? s.abschnitte.map(a => akkordBlockHTML(a, schritte, mitB)).join("") : leer("keine Akkorde");
+  let inhalt;
+  if (r === "drummer") {
+    // Die Lichter laufen ohne Pause im Tempo des Songs; die Eins ist rot. Antippen setzt wieder auf die Eins.
+    if (gezeigterEintrag !== e.id || taktBpm !== bpm) { taktStart = performance.now(); taktBpm = bpm; }
+    inhalt = '<button class="dioden' + (blinken ? "" : " aus") + '" aria-label="Tempo-Lichter. Antippen beginnt wieder bei der Eins."><i class="diode eins"></i><i class="diode"></i><i class="diode"></i><i class="diode"></i></button>'
+      + '<div class="rhythmusgross">' + html(rhythmus || "Kein Rhythmus eingetragen") + "</div>"
+      + '<div class="tempogross mono">' + (bpm ? html(bpm) + " BPM" + taktart : "Kein Tempo eingetragen") + "</div>"
+      + durchHTML(true);
+  } else if (geteilt) {
+    inhalt = '<div class="split"><section class="feld" data-feld="text" style="font-size:' + feldGroesse.text + 'px"><h4>Text</h4>' + textTeil() + "</section>"
+      + '<section class="feld" data-feld="akkorde" style="font-size:' + feldGroesse.akkorde + 'px"><h4>Akkorde</h4>' + akkordTeil() + "</section></div>";
+  } else if (r === "saenger") inhalt = textTeil();
+  else if (r === "akkorde") inhalt = akkordTeil();
+  else inhalt = hatText || hatAkkorde ? mixHTML(s, schritte, mitB) : leer("keinen Inhalt");
+
+  const name = x => html((song(x.songID) || {}).titel || "");
+  // Unter dem Titel: klein der Künstler, etwas größer in Gelb unser Sänger (ohne Sänger die Stimme), dann der Rhythmus.
+  const singt = sg ? sg.name : (e.stimme ? (e.stimme === "m" ? "Männerstimme" : "Frauenstimme") : "");
+  const unter = [s.kuenstler ? html(s.kuenstler) : "", singt ? '<span class="singt">' + html(singt) + "</span>" : "",
+    r !== "drummer" && rhythmus ? html(rhythmus) : "",
+    lage ? '<span class="marke dann">Medley ' + lage.platz + "/" + lage.anzahl + "</span>" : ""].filter(Boolean).join(" · ");
+  const wer = "<b>" + html(s.titel) + '</b><span class="unter">' + unter + "</span>";
+  const kopfTeil = '<div class="kopf">'
+    + (r === "drummer" ? "" : '<div class="gross mono"><b>' + html(tonartText(tonart) || "–") + "</b><span>TONART</span></div>")
+    + '<div class="wer">' + wer + "</div>"
+    + (e.modus ? '<div class="modusgross mono" aria-label="Modus ' + html(e.modus) + '">' + html(e.modus) + "</div>" : "")
+    + (bpm && r !== "drummer" ? '<div class="tempo mono"><b>' + html(bpm) + "</b><span>BPM" + taktart + "</span></div>" : "")
+    + "</div>";
+  const blaettern = '<div class="blaettern">'
+    + '<button class="knopf" data-eintrag="' + (davor ? html(davor.id) : "") + '"' + (davor ? "" : " disabled") + ">‹ <span>" + (davor ? name(davor) : "Erster Song") + "</span></button>"
+    + '<button class="knopf vor" data-eintrag="' + (danach ? html(danach.id) : "") + '"' + (danach ? "" : " disabled") + "><span>" + (danach ? name(danach) : "Letzter Song") + "</span> ›</button>"
+    + "</div>";
+
+  // Die linke Spalte und die beiden Split-Seiten behalten beim Neuzeichnen ihre Rollposition.
+  const alteSeite = haupt.querySelector(".seite"), gerollt = alteSeite ? alteSeite.scrollTop : null;
+  const gleicherSong = gezeigterEintrag === e.id, felderGerollt = {};
+  haupt.querySelectorAll(".feld").forEach(f => { felderGerollt[f.dataset.feld] = f.scrollTop; });
+  haupt.classList.add("breit");
+  if (geteilt) {
+    // Im Splitmodus gehört die ganze Breite dem Text und den Akkorden; geblättert wird über die Knöpfe darüber.
+    haupt.innerHTML = offlineHTML() + kopfTeil + blaettern + inhalt;  // im Split zeigt der Kopf „Medley 2/3“
+    window.scrollTo(0, 0);
+    splitHoehe();
+    if (gleicherSong) haupt.querySelectorAll(".feld").forEach(f => { f.scrollTop = felderGerollt[f.dataset.feld] || 0; });
+  } else {
+    haupt.innerHTML = offlineHTML() + '<div class="teiler"><nav class="seite" aria-label="Setliste">' + seiteHTML(l, e) + "</nav><div>"
+      + kopfTeil + '<div class="inhalt">' + inhalt + "</div>" + (r === "drummer" ? "" : durchHTML(false)) + blaettern + "</div></div>";
+    const seite = haupt.querySelector(".seite"), marke = seite.querySelector(".aktuell");
+    if (gerollt !== null) seite.scrollTop = gerollt;
+    // Nur beim Wechsel des Songs nach oben springen, nicht bei jeder Aktualisierung im Hintergrund.
+    if (!gleicherSong) {
+      window.scrollTo(0, 0);
+      // Der offene Song steht in der linken Spalte im Blick (nur diese Spalte rollt, nicht die Seite).
+      if (marke && seite.clientHeight) seite.scrollTop = Math.max(0, marke.offsetTop - seite.clientHeight / 3);
+    }
+  }
+  gezeigterEintrag = e.id;
+}
+
+// Splitmodus: Beide Seiten füllen genau den Platz bis zum unteren Rand (oder bis zum Live-Balken).
+function splitHoehe() {
+  const flaeche = haupt.querySelector(".split");
+  if (!flaeche) return;
+  const balken = document.getElementById("livebalken"), unten = balken.hidden ? 12 : balken.offsetHeight + 10;
+  const frei = Math.max(240, window.innerHeight - flaeche.getBoundingClientRect().top - unten);
+  const gestapelt = getComputedStyle(flaeche).gridTemplateColumns.trim().split(/\s+/).length < 2;
+  flaeche.querySelectorAll(".feld").forEach(f => { f.style.height = (gestapelt ? (frei - 10) / 2 : frei) + "px"; });
+}
+window.addEventListener("resize", splitHoehe);
+
+// Zwei Finger auf einer Split-Seite: Die Schrift dieser Seite wird größer oder kleiner, die andere bleibt.
+function feldSetzen(feld, wert) {
+  const neu = Math.min(48, Math.max(11, wert));
+  feld.style.fontSize = neu + "px";
+  feldGroesse[feld.dataset.feld] = Math.round(neu * 10) / 10;
+}
+function felderMerken() { try { localStorage.setItem("stagelist-felder", JSON.stringify(feldGroesse)); } catch (_) {} }
+function fingerAbstand(ev) { return Math.hypot(ev.touches[0].clientX - ev.touches[1].clientX, ev.touches[0].clientY - ev.touches[1].clientY); }
+let kneifen = null;
+haupt.addEventListener("touchstart", ev => {
+  if (ev.touches.length !== 2) return;
+  const feld = ev.touches[0].target.closest(".feld");
+  if (feld && feld === ev.touches[1].target.closest(".feld")) kneifen = { feld, abstand: fingerAbstand(ev) || 1, start: feldGroesse[feld.dataset.feld] };
+}, { passive: true });
+haupt.addEventListener("touchmove", ev => {
+  if (!kneifen || ev.touches.length !== 2) return;
+  ev.preventDefault();  // sonst vergrößert der Browser die ganze Seite
+  feldSetzen(kneifen.feld, kneifen.start * fingerAbstand(ev) / kneifen.abstand);
+}, { passive: false });
+for (const art of ["touchend", "touchcancel"]) haupt.addEventListener(art, () => { if (kneifen) { kneifen = null; felderMerken(); } });
+// Safari meldet das Spreizen zusätzlich selbst; am Mac geht dasselbe mit dem Trackpad.
+haupt.addEventListener("gesturestart", ev => { if (ev.target.closest && ev.target.closest(".feld")) ev.preventDefault(); });
+haupt.addEventListener("wheel", ev => {
+  const feld = ev.ctrlKey ? ev.target.closest(".feld") : null;
+  if (!feld) return;
+  ev.preventDefault();
+  feldSetzen(feld, feldGroesse[feld.dataset.feld] * (1 - ev.deltaY / 200));
+  felderMerken();
+}, { passive: false });
+
+// Drummer: Die vier Lichter laufen im Tempo, jedes leuchtet die erste Hälfte seines Schlags.
+function diodenLauf() {
+  const dioden = haupt.querySelectorAll(".diode");
+  if (dioden.length) {
+    let an = -1;
+    if (taktBpm > 0 && blinken) {
+      const schlag = 60000 / taktBpm, zeit = performance.now() - taktStart, nr = Math.floor(zeit / schlag);
+      if (zeit - nr * schlag < schlag / 2) an = nr % dioden.length;
+    }
+    dioden.forEach((d, i) => d.classList.toggle("an", i === an));
+  }
+  requestAnimationFrame(diodenLauf);
+}
+requestAnimationFrame(diodenLauf);
+// Beim Drummer bleibt der Bildschirm an, solange ein Song offen ist (wo der Browser das erlaubt).
+let wach = null;
+async function wachHalten(an) {
+  try {
+    if (an && !wach && navigator.wakeLock) {
+      const sperre = await navigator.wakeLock.request("screen");
+      wach = sperre;
+      sperre.addEventListener("release", () => { if (wach === sperre) wach = null; });
+    } else if (!an && wach) { const sperre = wach; wach = null; await sperre.release(); }
+  } catch (_) {}
+}
+
+// ---- Bedienung --------------------------------------------------------------------------------
+haupt.addEventListener("click", ereignis => {
+  const knopf = ereignis.target.closest("button");
+  if (!knopf || knopf.disabled) return;
+  if (knopf.classList.contains("dioden")) { taktStart = performance.now(); return; }
+  if (knopf.dataset.rolle) {
+    rolle = knopf.dataset.rolle; wahlOffen = false;
+    try { localStorage.setItem("stagelist-rolle", rolle); } catch (_) {}
+    zeigen();
+  }
+  else if (knopf.dataset.liste) gehe(knopf.dataset.liste, "");
+  // Vor und zurück im Song ersetzt den Eintrag: „Zurück“ führt so immer zur Setliste.
+  else if (knopf.dataset.eintrag) gehe(ort().l, knopf.dataset.eintrag, !!ort().e);
+});
+document.getElementById("zurueck").addEventListener("click", () => {
+  if (wahlOffen) { wahlOffen = false; zeigen(); return; }
+  const o = ort(); gehe(o.e ? o.l : "", "");
+});
+document.getElementById("rolle").addEventListener("click", () => { wahlOffen = true; zeigen(); window.scrollTo(0, 0); });
+document.getElementById("blink").addEventListener("click", () => {
+  blinken = !blinken;
+  // Beim Einschalten beginnen die Lichter wieder bei der Eins.
+  if (blinken) taktStart = performance.now();
+  try { localStorage.setItem("stagelist-blinken", blinken ? "1" : "0"); } catch (_) {}
+  zeigen();
+});
+document.getElementById("split").addEventListener("click", () => {
+  split = !split;
+  try { localStorage.setItem("stagelist-split", split ? "1" : "0"); } catch (_) {}
+  zeigen();
+});
+document.getElementById("neuLaden").addEventListener("click", laden);
+// Ob gerade der laufende Song offen ist (vor dem ersten Song: der nächste).
+function beimLiveSong() {
+  if (!live) return false;
+  const o = ort(), ziel = live.aktuellID || live.naechsterID;
+  return !!ziel && klein(o.l) === klein(live.setlisteID) && klein(o.e) === klein(ziel);
+}
+// Die gelbe Taste oben führt immer zum laufenden Song und folgt ihm ab dann. Ist man schon dort, schaltet sie das Folgen ab.
+document.getElementById("folgen").addEventListener("click", () => {
+  folgen = !(folgen && beimLiveSong() && !wahlOffen);
+  try { localStorage.setItem("stagelist-folgen", folgen ? "1" : "0"); } catch (_) {}
+  if (aktiveRolle()) wahlOffen = false;
+  if (!liveFolgen()) zeigen();
+});
+// Der Balken unten öffnet den laufenden Song (vor dem ersten Song: den nächsten).
+document.getElementById("livebalken").addEventListener("click", () => {
+  if (!live) return;
+  if (aktiveRolle()) wahlOffen = false;
+  const ziel = live.aktuellID || live.naechsterID;
+  if (beimLiveSong()) { zeigen(); window.scrollTo(0, 0); return; }
+  if (ziel) gehe(live.setlisteID, ziel, !!ort().e); else gehe(live.setlisteID, "");
+});
+function schrift(aenderung) {
+  let wert = 18; try { wert = Number(localStorage.getItem("stagelist-schrift")) || 18; } catch (_) {}
+  wert = Math.min(34, Math.max(13, wert + aenderung));
+  document.documentElement.style.setProperty("--schrift", wert + "px");
+  try { localStorage.setItem("stagelist-schrift", String(wert)); } catch (_) {}
+}
+document.getElementById("kleiner").addEventListener("click", () => schrift(-2));
+document.getElementById("groesser").addEventListener("click", () => schrift(2));
+schrift(0);
+
+let letzterSchluessel = ort().k;
+window.addEventListener("hashchange", () => {
+  if (ort().k !== letzterSchluessel) { letzterSchluessel = ort().k; daten = null; laden(); } else zeigen();
+});
+// Aktuell bleiben, solange die Seite zu sehen ist: alle 4 Sekunden die kleine Abfrage (Änderungen und Live),
+// alle 5 Minuten zur Sicherheit alles. Kennt die Datenbank die kleine Abfrage nicht, alle 16 Sekunden alles.
+document.addEventListener("visibilitychange", () => { if (!document.hidden) laden().then(puls); });
+let takt = 0;
+setInterval(() => {
+  if (document.hidden) return;
+  takt++;
+  if (takt % 75 === 0 || (pulsFehlt && takt % 4 === 0)) laden();
+  else if (!pulsFehlt) puls();
+}, 4000);
+laden().then(puls);
+</script>
+</body>
+</html>
