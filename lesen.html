@@ -181,9 +181,11 @@ body.live main { padding-bottom: 96px; }
 .kopf .wer .unter { display: block; margin-top: 3px; font-size: 14px; color: var(--gedimmt); }
 .kopf .wer .unter .singt { font-size: 19px; font-weight: 700; color: var(--jetzt); }
 .zettel { display: flex; gap: 10px; align-items: baseline; margin: -4px 0 14px; padding: 10px 14px; border-radius: 12px;
-  background: #F5A623; color: #000; font-size: 20px; line-height: 1.25; white-space: pre-wrap; }
-.zettel b { font-weight: 800; }
-body.geteilt .zettel { margin-bottom: 10px; font-size: 18px; }
+  background: rgba(245, 166, 35, 0.12); border: 1px solid rgba(245, 166, 35, 0.55); color: var(--text, #fff);
+  font-size: 18px; line-height: 1.25; white-space: pre-wrap; }
+.zettel span { color: #F5A623; }
+.zettel b { font-weight: 600; }
+body.geteilt .zettel { margin-bottom: 10px; font-size: 16px; }
 @media (max-width: 520px) {
   .kopf { gap: 10px; padding: 12px; }
   .kopf .gross b { font-size: 30px; }
