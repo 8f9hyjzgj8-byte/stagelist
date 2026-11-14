@@ -137,8 +137,15 @@ body.live main { padding-bottom: 96px; }
 }
 .pause { padding: 8px 14px; border-top: 1px solid var(--rand); color: var(--gedimmt); font-size: 13px; text-align: center; }
 
-.kopf { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; padding: 14px; border-radius: 16px; background: var(--karte); border: 1px solid var(--rand); }
-.kopf .gross { flex: none; text-align: center; color: var(--jetzt); }
+.kopf { --luft: 14px; margin-bottom: 14px; padding: 14px; border-radius: 16px; background: var(--karte); border: 1px solid var(--rand); }
+/* Wie in der App: oben drei feste Blöcke (Tonart | Titel und Künstler | Modus), darunter beschriftete Angaben. */
+.kopf .oben { display: flex; align-items: center; gap: var(--luft); }
+.kopf .trenner { flex: none; align-self: stretch; width: 1px; min-height: 40px; background: var(--rand); }
+.kopf .angaben { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 24px; margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--rand); font-size: 16px; font-weight: 600; }
+.kopf .angaben i { margin-right: 7px; font-style: normal; font-size: 11px; font-weight: 700; letter-spacing: .1em; color: var(--gedimmt); }
+.kopf .angaben .singt { color: var(--jetzt); }
+.kopf .gross { flex: none; min-width: 64px; text-align: center; color: var(--jetzt); }
 .kopf .gross b { display: block; font-size: 30px; line-height: 1; }
 .kopf .gross span { font-size: 10px; letter-spacing: .12em; color: var(--gedimmt); }
 .kopf .wer { flex: 1; min-width: 0; }
@@ -194,7 +201,8 @@ body.live main { padding-bottom: 96px; }
 @media (prefers-reduced-motion: reduce) { .zettel.neu { animation: none; } }
 body.geteilt .zettel { margin-bottom: 10px; font-size: 16px; }
 @media (max-width: 520px) {
-  .kopf { gap: 10px; padding: 12px; }
+  .kopf { --luft: 10px; padding: 12px; }
+  .kopf .angaben { gap: 4px 16px; font-size: 15px; }
   .kopf .gross b { font-size: 30px; }
   .kopf .wer b { font-size: 21px; }
   .kopf .wer .unter .singt { font-size: 17px; }
@@ -740,22 +748,26 @@ function songZeigen(l, e) {
   else inhalt = hatText || hatAkkorde ? mixHTML(s, schritte, mitB) : leer("keinen Inhalt");
 
   const name = x => html((song(x.songID) || {}).titel || "");
-  // Unter dem Titel: klein der Künstler, etwas größer in Gelb unser Sänger (ohne Sänger die Stimme), dann der Rhythmus.
+  // Unter dem Titel steht nur der Künstler. Sänger (ohne Sänger die Stimme), Tempo, Takt und Rhythmus stehen
+  // beschriftet in der Zeile darunter, immer in derselben Reihenfolge; was fehlt, fällt weg.
   const singt = sg ? sg.name : (e.stimme ? (e.stimme === "m" ? "Männerstimme" : "Frauenstimme") : "");
-  const unter = [s.kuenstler ? html(s.kuenstler) : "", singt ? '<span class="singt">' + html(singt) + "</span>" : "",
-    r !== "drummer" && rhythmus ? html(rhythmus) : "",
-    lage ? '<span class="marke dann">Medley ' + lage.platz + "/" + lage.anzahl + "</span>" : ""].filter(Boolean).join(" · ");
-  const wer = "<b>" + html(s.titel) + '</b><span class="unter">' + unter + "</span>";
+  const wer = "<b>" + html(s.titel) + "</b>" + (s.kuenstler ? '<span class="unter">' + html(s.kuenstler) + "</span>" : "");
+  const feld = (titel, wert) => "<span><i>" + titel + "</i>" + wert + "</span>";
+  const angaben = [singt ? feld("SÄNGER", '<span class="singt">' + html(singt) + "</span>") : "",
+    bpm && r !== "drummer" ? feld("TEMPO", html(bpm) + " bpm") : "",
+    s.taktart && r !== "drummer" ? feld("TAKT", html(s.taktart)) : "",
+    r !== "drummer" && rhythmus ? feld("RHYTHMUS", html(rhythmus)) : "",
+    lage ? '<span class="marke dann">Medley ' + lage.platz + "/" + lage.anzahl + "</span>" : ""].filter(Boolean).join("");
   // Spickzettel der Band dieser Setliste: neutrale Zeile unter dem Kopf; ohne Text erscheint nichts.
   // Nur beim Wechsel auf diesen Song blinkt er (Klasse „neu“), nicht bei jedem Neuzeichnen.
   const zettelText = (Object.entries(s.notizen || {}).find(([band]) => klein(band) === klein(l.bandID)) || [])[1];
   const zettel = zettelText && zettelText.trim()
     ? '<div class="zettel' + (gezeigterEintrag === e.id ? "" : " neu") + '" aria-label="Spickzettel"><span aria-hidden="true">✎</span><b>' + html(zettelText.trim()) + "</b></div>" : "";
-  const kopfTeil = '<div class="kopf">'
-    + (r === "drummer" ? "" : '<div class="gross mono"><b>' + html(tonartText(tonart) || "–") + "</b><span>TONART</span></div>")
+  const kopfTeil = '<div class="kopf"><div class="oben">'
+    + (r === "drummer" ? "" : '<div class="gross mono"><b>' + html(tonartText(tonart) || "–") + '</b><span>TONART</span></div><div class="trenner"></div>')
     + '<div class="wer">' + wer + "</div>"
     + (e.modus ? '<div class="modusgross mono" aria-label="Modus ' + html(e.modus) + '">' + html(e.modus) + "</div>" : "")
-    + (bpm && r !== "drummer" ? '<div class="tempo mono"><b>' + html(bpm) + "</b><span>BPM" + taktart + "</span></div>" : "")
+    + "</div>" + (angaben ? '<div class="angaben">' + angaben + "</div>" : "")
     + "</div>" + zettel;
   const blaettern = '<div class="blaettern">'
     + '<button class="knopf" data-eintrag="' + (davor ? html(davor.id) : "") + '"' + (davor ? "" : " disabled") + ">‹ <span>" + (davor ? name(davor) : "Erster Song") + "</span></button>"
