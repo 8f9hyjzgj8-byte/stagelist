@@ -83,6 +83,7 @@ h2.gruppe:first-child { margin-top: 4px; }
 .marke { flex: none; padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
 .marke.jetzt { background: var(--jetzt); color: #000; }
 .marke.dann { border: 1px solid var(--jetzt); color: var(--jetzt); }
+.marke.neu { background: #4ADE80; color: #000; }
 /* Wie in der App: Der laufende Song ist weiß hinterlegt, der nächste gelb; beide mit dunkler Schrift. */
 .zeile.laeuft { background: var(--text); }
 .zeile.naechster { background: var(--jetzt); }
@@ -392,6 +393,10 @@ function liveMarke(l, e) {
 function markeHTML(art) {
   return art === "laeuft" ? '<span class="marke jetzt">Live</span>' : (art === "naechster" ? '<span class="marke dann">Next</span>' : "");
 }
+// „NEU“: Der Song kam im laufenden Live-Betrieb in die Setliste. Die Marke verschwindet, sobald er läuft oder gespielt ist.
+function neuHTML(l, e, art) {
+  return e.neu && art !== "laeuft" && !gespielt(l, e) ? '<span class="marke neu">Neu</span>' : "";
+}
 // Knopf „Live“ im Kopf und Balken unten; beide gibt es nur, solange die Band live ist.
 function liveZeigen() {
   const liste = live ? setliste(live.setlisteID) : null, an = !!(daten && liste);
@@ -675,7 +680,7 @@ function setlisteZeigen(l) {
         + '" data-eintrag="' + html(e.id) + '">'
         + '<span class="nr">' + nr + "</span>"
         + '<span class="mitte"><b>' + html(s.titel) + "</b><span>" + html(unter) + "</span></span>"
-        + markeHTML(marke)
+        + markeHTML(marke) + neuHTML(l, e, marke)
         + (e.modus ? '<span class="modus">' + html(e.modus) + "</span>" : "")
         + (sg ? '<span class="saenger"' + (farbe(sg.farbe) ? ' style="--farbe:' + farbe(sg.farbe) + '"' : "") + "><i></i>" + html(sg.name) + "</span>"
               : (e.stimme ? '<span class="saenger"><i></i>' + (e.stimme === "m" ? "M" : "W") + "</span>" : ""))
@@ -702,7 +707,7 @@ function seiteHTML(l, aktuell) {
     return medleyMarkeHTML(lage, true) + '<button class="zeile' + (lage ? " medley" : "") + (ist ? " aktuell" : "") + (marke ? " " + marke : (gespielt(l, e) ? " gespielt" : "")) + '" data-eintrag="' + html(e.id) + '"'
       + (ist ? ' aria-current="true"' : "") + '><span class="nr">' + nr + "</span>"
       + '<span class="mitte"><b>' + html(s.titel) + "</b><span>" + html([(s.rhythmus || []).join(", "), s.bpm ? s.bpm + " bpm" : "", (saenger(e.saengerID) || {}).name].filter(Boolean).join(" · ")) + "</span></span>"
-      + markeHTML(marke) + hintenHTML(e, s) + "</button>" + medleyMarkeHTML(lage, false);
+      + markeHTML(marke) + neuHTML(l, e, marke) + hintenHTML(e, s) + "</button>" + medleyMarkeHTML(lage, false);
   }).join("")).join("");
 }
 
