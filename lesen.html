@@ -181,10 +181,14 @@ body.live main { padding-bottom: 96px; }
 .kopf .wer .unter { display: block; margin-top: 3px; font-size: 14px; color: var(--gedimmt); }
 .kopf .wer .unter .singt { font-size: 19px; font-weight: 700; color: var(--jetzt); }
 .zettel { display: flex; gap: 10px; align-items: baseline; margin: -4px 0 14px; padding: 10px 14px; border-radius: 12px;
-  background: rgba(245, 166, 35, 0.12); border: 1px solid rgba(245, 166, 35, 0.55); color: var(--text, #fff);
+  background: var(--karte); border: 1px solid var(--rand); color: var(--text);
   font-size: 18px; line-height: 1.25; white-space: pre-wrap; }
-.zettel span { color: #F5A623; }
+.zettel span { color: var(--gedimmt); }
 .zettel b { font-weight: 600; }
+/* Beim Öffnen eines Songs leuchtet der Spickzettel dreimal kurz auf. */
+@keyframes zettelBlink { 50% { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.7); } }
+.zettel.neu { animation: zettelBlink .52s ease-in-out 3; }
+@media (prefers-reduced-motion: reduce) { .zettel.neu { animation: none; } }
 body.geteilt .zettel { margin-bottom: 10px; font-size: 16px; }
 @media (max-width: 520px) {
   .kopf { gap: 10px; padding: 12px; }
@@ -734,10 +738,11 @@ function songZeigen(l, e) {
     r !== "drummer" && rhythmus ? html(rhythmus) : "",
     lage ? '<span class="marke dann">Medley ' + lage.platz + "/" + lage.anzahl + "</span>" : ""].filter(Boolean).join(" · ");
   const wer = "<b>" + html(s.titel) + '</b><span class="unter">' + unter + "</span>";
-  // Spickzettel der Band dieser Setliste: groß und gelb unter dem Kopf; ohne Text erscheint nichts.
+  // Spickzettel der Band dieser Setliste: neutrale Zeile unter dem Kopf; ohne Text erscheint nichts.
+  // Nur beim Wechsel auf diesen Song blinkt er (Klasse „neu“), nicht bei jedem Neuzeichnen.
   const zettelText = (Object.entries(s.notizen || {}).find(([band]) => klein(band) === klein(l.bandID)) || [])[1];
   const zettel = zettelText && zettelText.trim()
-    ? '<div class="zettel" aria-label="Spickzettel"><span aria-hidden="true">✎</span><b>' + html(zettelText.trim()) + "</b></div>" : "";
+    ? '<div class="zettel' + (gezeigterEintrag === e.id ? "" : " neu") + '" aria-label="Spickzettel"><span aria-hidden="true">✎</span><b>' + html(zettelText.trim()) + "</b></div>" : "";
   const kopfTeil = '<div class="kopf">'
     + (r === "drummer" ? "" : '<div class="gross mono"><b>' + html(tonartText(tonart) || "–") + "</b><span>TONART</span></div>")
     + '<div class="wer">' + wer + "</div>"
