@@ -43,6 +43,9 @@ main { max-width: 900px; margin: 0 auto; padding: 14px; }
 .karte span { display: block; margin-top: 2px; color: var(--gedimmt); font-size: 14px; }
 h2.gruppe { margin: 18px 4px 10px; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--gedimmt); }
 h2.gruppe:first-child { margin-top: 4px; }
+.reiter { display: flex; gap: 6px; margin: 4px 0 14px; padding: 4px; border-radius: 12px; background: var(--karte); border: 1px solid var(--rand); }
+.reiter button { flex: 1; padding: 9px 10px; border: 0; border-radius: 9px; background: none; color: var(--gedimmt); font: inherit; font-weight: 700; cursor: pointer; }
+.reiter button.aktiv { background: var(--karte-hoch); color: var(--text); }
 
 .set { margin-bottom: 16px; border-radius: 16px; overflow: hidden; background: var(--karte); border: 1px solid var(--rand); }
 .set h2 { margin: 0; padding: 10px 14px; display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
@@ -249,6 +252,7 @@ let daten = null;      // letzte Antwort des Servers
 let veraltet = false;  // gezeigt wird ein gemerkter Stand, weil der Server nicht erreichbar war
 let fehlerText = "";
 let gezeigterEintrag = "";  // Song, der gerade offen ist
+let uebersichtReiter = "gigs";  // Übersicht: „gigs“ (Setlisten) oder „proben“
 let live = null;            // Live-Stand der Band: { setlisteID, aktuellID, naechsterID } oder null
 let folgen = false;         // „Live folgen“: Die Seite springt von selbst zum laufenden Song
 try { folgen = localStorage.getItem("stagelist-folgen") === "1"; } catch (_) {}
@@ -634,11 +638,15 @@ function uebersichtZeigen() {
       + "<b>" + html(l.name || "Ohne Namen") + (live && klein(live.setlisteID) === klein(l.id) ? ' <span class="marke jetzt">Live</span>' : "") + "</b><span>" + html(datumText(l.datum)) + (band ? " · " + html(band.name) : "")
       + " · " + l.sets.length + (l.sets.length === 1 ? " Set" : " Sets") + " · " + anzahl + (anzahl === 1 ? " Song" : " Songs") + "</span></button>";
   };
-  // Erst die Gigs, darunter unter eigener Überschrift die Proben.
+  // Zuerst nur die Setlisten für Auftritte. Proben liegen in einem eigenen Reiter, den es nur gibt, wenn es Proben gibt.
   const gigs = listen.filter(l => !l.probe), proben = listen.filter(l => l.probe);
-  haupt.innerHTML = offlineHTML()
-    + (gigs.length && proben.length ? '<h2 class="gruppe">Setlisten</h2>' : "") + gigs.map(karte).join("")
-    + (proben.length ? '<h2 class="gruppe">Proben</h2>' + proben.map(karte).join("") : "");
+  const zeigeProben = uebersichtReiter === "proben" && proben.length > 0;
+  const reiter = proben.length ? '<div class="reiter">'
+    + '<button data-reiter="gigs"' + (zeigeProben ? "" : ' class="aktiv"') + ">Setlisten</button>"
+    + '<button data-reiter="proben"' + (zeigeProben ? ' class="aktiv"' : "") + ">Proben · " + proben.length + "</button></div>" : "";
+  const gezeigt = zeigeProben ? proben : gigs;
+  haupt.innerHTML = offlineHTML() + reiter + (gezeigt.length ? gezeigt.map(karte).join("")
+    : '<div class="hinweis"><b>Keine aktive Setliste</b>Sobald die Band eine Setliste anlegt, erscheint sie hier.</div>');
 }
 
 function setlisteZeigen(l) {
@@ -857,6 +865,7 @@ haupt.addEventListener("click", ereignis => {
     try { localStorage.setItem("stagelist-rolle", rolle); } catch (_) {}
     zeigen();
   }
+  else if (knopf.dataset.reiter) { uebersichtReiter = knopf.dataset.reiter; zeigen(); }
   else if (knopf.dataset.liste) gehe(knopf.dataset.liste, "");
   // Vor und zurück im Song ersetzt den Eintrag: „Zurück“ führt so immer zur Setliste.
   else if (knopf.dataset.eintrag) gehe(ort().l, knopf.dataset.eintrag, !!ort().e);
