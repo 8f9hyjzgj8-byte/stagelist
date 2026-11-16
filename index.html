@@ -120,41 +120,81 @@
     .eintrag .datum { font: 600 14px var(--mono); }
     .bandstrich { width: 4px; border-radius: 2px; align-self: stretch; flex: none; }
 
-    /* Setlisten-Editor */
-    #setEditor { display: none; max-width: 1100px; padding: 24px 32px 80px; }
-    #setEditor.offen { display: block; }
+    /* Setlisten-Planer: wie auf dem iPad links die Setliste, rechts der gewählte Song, wie er auf der Bühne aussieht. */
+    #setEditor { display: none; height: 100%; padding: 0 20px; grid-template-columns: minmax(380px, 460px) minmax(0, 1fr);
+        grid-template-rows: auto auto auto minmax(0, 1fr); column-gap: 18px; }
+    #setEditor.offen { display: grid; }
+    #setEditor > .leiste, #slKonflikt, #slDetails { grid-column: 1 / -1; }
+    #setEditor > .leiste { margin-bottom: 12px; }
+    #slDetails { display: none; margin-bottom: 12px; }
+    #slDetails.offen { display: block; }
+    #slLinks { overflow-y: auto; min-height: 0; padding: 0 4px 60px 0; }
+    #slVorschau { overflow-y: auto; min-height: 0; padding: 0 4px 60px 18px; border-left: 1px solid var(--rand); }
+    @media (max-width: 1100px) { #setEditor { grid-template-columns: 1fr; } #slVorschau { display: none; } }
     #slKonflikt { display: none; background: rgba(245,166,35,0.12); border: 1px solid var(--gelb); border-radius: 12px;
-        padding: 10px 14px; margin-bottom: 16px; align-items: center; gap: 10px; }
+        padding: 10px 14px; margin-bottom: 12px; align-items: center; gap: 10px; }
     #slKonflikt.offen { display: flex; }
     #slKonflikt span { flex: 1; }
     .haken { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text); }
     .summe { font: 14px var(--mono); color: var(--gedimmt); }
-    .set { background: var(--karte); border: 1px solid var(--rand); border-radius: 18px; padding: 14px; margin-bottom: 16px; }
-    .set .setkopf { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-    .set .setkopf input.setname { font-weight: 700; font-size: 16px; max-width: 260px; }
-    .set .setkopf input.pause { width: 64px; }
-    .set .setkopf .summe { flex: 1; text-align: right; white-space: nowrap; }
-    .zeilen { min-height: 44px; border-radius: 12px; }
-    .zeilen.ziel { outline: 2px dashed var(--koralle); outline-offset: 2px; }
-    .zeile-s { display: grid; grid-template-columns: 22px 28px 1fr 104px 150px 58px 54px auto; gap: 8px; align-items: center;
-        padding: 5px 6px; border-radius: 10px; background: var(--karte-hoch); margin-bottom: 4px; border-top: 2px solid transparent; }
-    .zeile-s.drueber { border-top-color: var(--koralle); }
+    #slSumme { display: block; margin: 0 0 10px 4px; }
+    .set { background: var(--karte); border: 1px solid var(--rand); border-radius: 16px; margin-bottom: 14px; overflow: hidden; }
+    .set .setkopf { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--karte-hoch); }
+    .set .setkopf input.setname { flex: 1; min-width: 0; font-weight: 800; font-size: 18px; background: none; border-color: transparent; padding: 4px 6px; }
+    .set .setkopf input.setname:hover, .set .setkopf input.setname:focus { border-color: var(--rand); background: var(--hg); }
+    .set .setkopf .summe { white-space: nowrap; font-size: 13px; }
+    .set .setfuss { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-top: 1px solid var(--rand); color: var(--gedimmt); font-size: 13px; }
+    .set .setfuss input.pause { width: 60px; padding: 3px 6px; }
+    .zeilen { min-height: 44px; }
+    .zeilen.ziel { outline: 2px dashed var(--koralle); outline-offset: -2px; }
+    .zeile-s { border-top: 1px solid var(--rand); }
+    .zeile-s.medley { border-left: 2px solid var(--text); }
+    .zeile-s.drueber { border-top: 2px solid var(--koralle); }
     .zeile-s.ziehen { opacity: 0.4; }
-    .zeile-s .griff { cursor: grab; color: var(--gedimmt); text-align: center; user-select: none; }
-    .zeile-s .nr { font: 13px var(--mono); color: var(--gedimmt); text-align: right; }
-    .zeile-s .song { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-    .zeile-s .song .k { color: var(--gedimmt); font-size: 13px; }
-    .zeile-s select { padding: 4px 6px; font-size: 13px; }
-    .zeile-s .d { font: 13px var(--mono); color: var(--gedimmt); text-align: right; }
-    .zeile-s .medley { font-size: 10px; font-weight: 700; color: var(--lila); letter-spacing: 1px; margin-left: 6px; }
-    .zeile-s .knoepfe { display: flex; gap: 4px; }
-    /* Schmales Fenster: Songtitel in eigener Zeile, die Auswahlfelder darunter */
-    @media (max-width: 1180px) {
-        .zeile-s { grid-template-columns: 22px 28px 1fr 1fr 58px 48px auto; }
-        .zeile-s .song { grid-column: 3 / -1; }
-        .zeile-s select[data-feld="tonart"] { grid-column: 1 / 4; }
-        .set .setkopf { flex-wrap: wrap; }
-    }
+    .zeile-s.gewaehlt { background: var(--karte-hoch); box-shadow: inset 4px 0 0 var(--text); }
+    .zeile-s .reihe { display: flex; align-items: center; gap: 8px; padding: 9px 12px 9px 6px; cursor: pointer; }
+    .zeile-s .griff { cursor: grab; color: var(--gedimmt); width: 18px; text-align: center; user-select: none; flex: none; }
+    .zeile-s .song { flex: 1; min-width: 0; }
+    .zeile-s .song b { display: block; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .zeile-s .song .k { display: block; color: var(--gedimmt); font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .zeile-s .modusmarke { flex: none; min-width: 24px; padding: 1px 6px; border-radius: 6px; background: var(--gelb); color: #000; font: 800 13px var(--mono); text-align: center; }
+    .zeile-s .hinten { flex: none; min-width: 52px; text-align: right; }
+    .zeile-s .hinten b { display: block; font: 700 16px var(--mono); }
+    .zeile-s .hinten span { display: block; color: var(--gedimmt); font-size: 11px; font-weight: 600; }
+    .zeile-s .bearbeiten { display: grid; grid-template-columns: 1fr 1fr 62px; gap: 6px; padding: 0 12px 10px 32px; }
+    .zeile-s .bearbeiten select { padding: 5px 6px; font-size: 13px; }
+    .zeile-s .bearbeiten .knoepfe { grid-column: 1 / -1; display: flex; gap: 6px; align-items: center; }
+    .zeile-s .bearbeiten .d { flex: 1; font: 13px var(--mono); color: var(--gedimmt); }
+    .medleymarke { padding: 4px 14px; border-top: 1px solid var(--rand); border-left: 2px solid var(--text); font-size: 11px; font-weight: 800; letter-spacing: 1px; }
+    .medleymarke.ende { border-top: 0; }
+    /* Songansicht rechts */
+    .vleer { color: var(--gedimmt); text-align: center; padding-top: 120px; }
+    .vkopf { position: sticky; top: 0; z-index: 1; background: var(--hg); padding: 4px 0 10px; border-bottom: 1px solid var(--rand); margin-bottom: 14px; }
+    .vkopf .oben { display: flex; align-items: center; gap: 14px; }
+    .vkopf .gross { flex: none; min-width: 64px; text-align: center; color: var(--gelb); }
+    .vkopf .gross b { display: block; font: 800 36px/1 var(--mono); }
+    .vkopf .gross span { font-size: 10px; letter-spacing: 1.5px; color: var(--gedimmt); }
+    .vkopf .trenner { align-self: stretch; width: 1px; background: var(--rand); }
+    .vkopf .wer { flex: 1; min-width: 0; }
+    .vkopf .wer b { display: block; font-size: 26px; line-height: 1.15; overflow-wrap: anywhere; }
+    .vkopf .wer span { color: var(--gedimmt); }
+    .vkopf .modusgross { flex: none; padding: 4px 10px; border-radius: 12px; background: var(--gelb); color: #000; font: 800 34px/1 var(--mono); }
+    .vkopf .angaben { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 22px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--rand); font-weight: 600; }
+    .vkopf .angaben i { margin-right: 7px; font-style: normal; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: var(--gedimmt); }
+    .vkopf .angaben .singt { color: var(--gelb); }
+    .vkopf .werkzeug { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+    .vkopf .werkzeug .reiter { flex: none; }
+    .vkopf .werkzeug .reiter button { padding: 4px 12px; font-size: 13px; }
+    .vzettel { display: flex; gap: 10px; margin: 0 0 14px; padding: 9px 12px; border-radius: 12px; background: var(--karte); border: 1px solid var(--rand); color: var(--gedimmt); white-space: pre-wrap; }
+    .vab { margin-bottom: 18px; }
+    .vab h3 { display: flex; align-items: center; gap: 12px; margin: 0 0 6px; font-size: 15px; letter-spacing: 1px; text-transform: uppercase; color: var(--farbe, var(--gedimmt)); }
+    .vab h3 .linie { flex: 1; height: 2px; background: var(--farbe, var(--rand)); opacity: .8; }
+    .vab h3 small { text-transform: none; letter-spacing: 0; color: var(--gedimmt); font-weight: 600; }
+    .vab h3 .mal { color: var(--text); }
+    .vab pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 18px; line-height: 1.45; }
+    .vab pre.akk { font: 600 26px/1.5 var(--mono); }
+    .vab .strich { color: rgba(255,255,255,.7); }
+    .vab .notiz { color: #8B90A0; } .vab .notiz.stark { color: #FFB000; } .vab .klammer { color: #FF2D95; }
     .leerhinweis { color: var(--gedimmt); font-size: 13px; padding: 12px; text-align: center; }
 
     /* Song-Auswahl */
@@ -246,6 +286,7 @@
             <div class="leiste">
                 <h2 id="slUeberschrift"></h2>
                 <span id="slMeldung"></span>
+                <button class="knopf" id="slDetailsKnopf" aria-expanded="false">Name, Datum, Band</button>
                 <button class="knopf gefahr" id="slLoeschen">Löschen</button>
                 <button class="knopf haupt" id="slSpeichern" title="⌘S">Speichern</button>
             </div>
@@ -256,7 +297,7 @@
                 <button class="knopf" id="slKonfliktUeberschreiben">Meine Änderungen behalten</button>
             </div>
 
-            <div class="karte">
+            <div class="karte" id="slDetails">
                 <div class="raster">
                     <label class="feld breit">Name <input type="text" id="slName"></label>
                     <label class="feld">Band <select id="slBand"></select></label>
@@ -266,14 +307,17 @@
                     <label class="haken"><input type="checkbox" id="slArchiv"> Im Archiv</label>
                     <label class="haken"><input type="checkbox" id="slProbe"> Probe</label>
                     <label class="haken"><input type="checkbox" id="slStatistik"> Zählt in der Statistik</label>
-                    <span class="summe" id="slSumme" style="flex: 1; text-align: right;"></span>
                 </div>
             </div>
 
-            <div id="sets"></div>
-            <button class="knopf" id="setNeu">＋ Set</button>
-            <p class="hilfe">Songs am Griff ⠿ ziehen, um sie umzusortieren – auch in ein anderes Set.
-                Sänger wählen setzt seine Tonart; Songs ohne eigene Dauer zählen mit der Standard-Songdauer.</p>
+            <div id="slLinks">
+                <span class="summe" id="slSumme"></span>
+                <div id="sets"></div>
+                <button class="knopf" id="setNeu">＋ Set</button>
+                <p class="hilfe">Song antippen: Rechts erscheint er wie auf der Bühne, darunter stellst du Sänger, Tonart und Modus ein.
+                    Am Griff ⠿ ziehen sortiert um, auch in ein anderes Set. „＋ Songs“ fügt hinter dem angetippten Song ein.</p>
+            </div>
+            <div id="slVorschau"></div>
         </div>
 
         <div id="auswahl">
@@ -390,6 +434,9 @@ let istNeu = false;
 let abgleichTimer = null;
 let modus = "songs";       // „songs“ oder „setlisten“
 let sl = null;             // Kopie der gewählten Setliste, wird bearbeitet
+let slGewaehlt = null;     // Eintrag der Setliste, der rechts als Song zu sehen ist
+let vorschauArt = "beides";  // Songansicht im Planer: „beides“, „akkorde“ oder „text“
+try { vorschauArt = localStorage.getItem("planer-vorschau") || "beides"; } catch (e) {}
 let slNeu = false;
 const $ = id => document.getElementById(id);
 
@@ -1052,8 +1099,16 @@ function slOeffnen(id) {
     if (!s) return;
     sl = structuredClone(s);
     slNeu = false;
+    // Wie in der App: Gleich der erste Song ist zu sehen.
+    slGewaehlt = ((sl.sets.find(x => x.eintraege.length) || { eintraege: [] }).eintraege[0] || {}).id || null;
+    detailsZeigen(false);
     slZeigen();
     markieren(false);
+}
+
+function detailsZeigen(offen) {
+    $("slDetails").classList.toggle("offen", offen);
+    $("slDetailsKnopf").setAttribute("aria-expanded", offen ? "true" : "false");
 }
 
 function slSchliessen() {
@@ -1072,6 +1127,8 @@ function slNeuAnlegen() {
         sets: [{ id: uuid(), name: "Set 1", eintraege: [], pauseMinuten: 0 }],
         archiviert: false, inStatistik: true, probe: alsProbe, version: "" };
     slNeu = true;
+    slGewaehlt = null;
+    detailsZeigen(true);
     slZeigen();
     markieren(true);
     $("slName").select();
@@ -1098,7 +1155,7 @@ function slZeigen() {
 
 function summeZeigen() {
     const songs = sl.sets.reduce((n, s) => n + s.eintraege.length, 0);
-    const gesamt = sl.sets.reduce((t, s) => t + setDauer(s) + s.pauseMinuten * 60, 0);
+    const gesamt = sl.sets.reduce((t, s) => t + setDauer(s) + (s.pauseMinuten || 0) * 60, 0);
     $("slSumme").textContent = `${songs} Songs · ${sl.sets.length} Sets · gesamt ${stundenText(gesamt)} mit Pausen`;
     document.querySelectorAll(".set").forEach(el => {
         const set = sl.sets[Number(el.dataset.k)];
@@ -1111,56 +1168,249 @@ function setsZeigen() {
     $("sets").innerHTML = sl.sets.map((set, k) => `
         <div class="set" data-k="${k}">
             <div class="setkopf">
-                <input type="text" class="setname" data-feld="name" value="${html(set.name)}">
-                <span class="hilfe" style="margin: 0;">Pause</span>
-                <input type="number" class="pause" data-feld="pauseMinuten" min="0" max="240" value="${set.pauseMinuten}">
-                <span class="hilfe" style="margin: 0;">min</span>
+                <input type="text" class="setname" data-feld="name" value="${html(set.name)}" aria-label="Name des Sets">
                 <span class="summe"></span>
                 <button type="button" class="knopf klein" data-aktion="songs">＋ Songs</button>
-                <button type="button" class="knopf klein" data-aktion="hoch" title="Set nach oben">↑</button>
-                <button type="button" class="knopf klein" data-aktion="runter" title="Set nach unten">↓</button>
-                <button type="button" class="knopf klein gefahr" data-aktion="weg" title="Set löschen">✕</button>
             </div>
             <div class="zeilen" data-k="${k}">
                 ${set.eintraege.map((e, n) => zeileHTML(e, k, n, saenger)).join("") ||
                     '<div class="leerhinweis">Noch keine Songs – „＋ Songs“ oder hierher ziehen.</div>'}
             </div>
+            <div class="setfuss">
+                <span>Pause</span>
+                <input type="number" class="pause" data-feld="pauseMinuten" min="0" max="240" value="${set.pauseMinuten || 0}">
+                <span style="flex: 1;">min</span>
+                <button type="button" class="knopf klein" data-aktion="hoch" title="Set nach oben">↑</button>
+                <button type="button" class="knopf klein" data-aktion="runter" title="Set nach unten">↓</button>
+                <button type="button" class="knopf klein gefahr" data-aktion="weg" title="Set löschen">✕</button>
+            </div>
         </div>`).join("");
     summeZeigen();
+    vorschauZeigen();
 }
 
-function zeileHTML(e, k, n, saenger) {
-    const song = songVon(e.songID) || { titel: "(gelöscht)", kuenstler: "", tonart: "", saenger: [] };
-    const kann = new Set(song.saenger.map(t => t.saengerID));
-    // Sänger, die den Song können, zuerst
-    const liste = [...saenger].sort((a, b) => (kann.has(b.id) - kann.has(a.id)) || a.name.localeCompare(b.name, "de"));
-    if (e.saengerID && !liste.some(s => s.id === e.saengerID)) {
-        const alt = daten.saenger.find(s => s.id === e.saengerID);
-        if (alt) liste.push(alt);
-    }
-    return `<div class="zeile-s" data-k="${k}" data-n="${n}">
-        <span class="griff" draggable="true" title="Ziehen zum Umsortieren">⠿</span>
-        <span class="nr">${n + 1}</span>
-        <span class="song"><b>${html(song.titel)}</b> <span class="k">${html(song.kuenstler)}</span>${e.medleyID ? '<span class="medley">MEDLEY</span>' : ""}</span>
-        <select data-feld="tonart" title="Tonart in dieser Setliste">
-            <option value="">${song.tonart ? "Orig. " + html(song.tonart) : "Original"}</option>
-            ${daten.tonarten.map(t => `<option${t === e.tonart ? " selected" : ""}>${t}</option>`).join("")}
-        </select>
-        <select data-feld="saengerID" title="Sänger">
-            <option value="">Sänger –</option>
-            ${liste.map(s => `<option value="${s.id}"${s.id === e.saengerID ? " selected" : ""}>${kann.has(s.id) ? "✓ " : ""}${html(s.name)}</option>`).join("")}
-        </select>
-        <select data-feld="modus" title="Modus">
-            ${["", "P", "1", "2"].map(m => `<option value="${m}"${(e.modus || "") === m ? " selected" : ""}>${m || "–"}</option>`).join("")}
-        </select>
-        <span class="d">${dauerText(songDauer(songVon(e.songID)))}</span>
-        <span class="knoepfe">
-            <button type="button" class="knopf klein" data-aktion="e-hoch" title="Nach oben">↑</button>
-            <button type="button" class="knopf klein" data-aktion="e-runter" title="Nach unten">↓</button>
-            <button type="button" class="knopf klein gefahr" data-aktion="e-weg" title="Aus der Setliste entfernen">✕</button>
-        </span>
-    </div>`;
+// Lage eines Eintrags in seinem Medley (Songs direkt hintereinander mit derselben Medley-Nummer); null = kein Medley.
+function medleyLage(eintraege, i) {
+    const id = eintraege[i].medleyID;
+    if (!id) return null;
+    let a = i, b = i;
+    while (a > 0 && eintraege[a - 1].medleyID === id) a--;
+    while (b + 1 < eintraege.length && eintraege[b + 1].medleyID === id) b++;
+    return a === b ? null : { start: i === a, ende: i === b, anzahl: b - a + 1 };
 }
+const rhythmenVon = song => daten.merkmale.filter(m => m.kategorie === "rhythmus" && (song.merkmalIDs || []).includes(m.id)).map(m => m.name);
+
+// Eine Zeile wie in der App: Titel, darunter Künstler · Rhythmus · Tempo, rechts Tonart und Sänger.
+// Die angetippte Zeile klappt auf: Sänger, Tonart, Modus, verschieben und entfernen.
+function zeileHTML(e, k, n, saenger) {
+    const song = songVon(e.songID) || { titel: "(gelöscht)", kuenstler: "", tonart: "", saenger: [], merkmalIDs: [], bpm: 0 };
+    const gewaehlt = e.id === slGewaehlt, lage = medleyLage(sl.sets[k].eintraege, n);
+    const singt = e.saengerID && daten.saenger.find(s => s.id === e.saengerID);
+    const unter = [song.kuenstler, rhythmenVon(song).join(", "), song.bpm ? song.bpm + " bpm" : ""].filter(Boolean).join(" · ");
+    let bearbeiten = "";
+    if (gewaehlt) {
+        const kann = new Set(song.saenger.map(t => t.saengerID));
+        // Sänger, die den Song können, zuerst
+        const liste = [...saenger].sort((a, b) => (kann.has(b.id) - kann.has(a.id)) || a.name.localeCompare(b.name, "de"));
+        if (e.saengerID && !liste.some(s => s.id === e.saengerID) && singt) liste.push(singt);
+        bearbeiten = `<div class="bearbeiten">
+            <select data-feld="saengerID" title="Sänger">
+                <option value="">Sänger –</option>
+                ${liste.map(s => `<option value="${s.id}"${s.id === e.saengerID ? " selected" : ""}>${kann.has(s.id) ? "✓ " : ""}${html(s.name)}</option>`).join("")}
+            </select>
+            <select data-feld="tonart" title="Tonart in dieser Setliste">
+                <option value="">${song.tonart ? "Orig. " + html(Vorschau.tonartText(song.tonart)) : "Original"}</option>
+                ${daten.tonarten.map(t => `<option value="${t}"${t === e.tonart ? " selected" : ""}>${Vorschau.tonartText(t)}</option>`).join("")}
+            </select>
+            <select data-feld="modus" title="Modus">
+                ${["", "P", "1", "2"].map(m => `<option value="${m}"${(e.modus || "") === m ? " selected" : ""}>${m || "–"}</option>`).join("")}
+            </select>
+            <span class="knoepfe">
+                <span class="d">${dauerText(songDauer(songVon(e.songID)))}</span>
+                <button type="button" class="knopf klein" data-aktion="e-hoch" title="Nach oben">↑</button>
+                <button type="button" class="knopf klein" data-aktion="e-runter" title="Nach unten">↓</button>
+                <button type="button" class="knopf klein gefahr" data-aktion="e-weg" title="Aus der Setliste entfernen">✕ Entfernen</button>
+            </span>
+        </div>`;
+    }
+    return (lage && lage.start ? `<div class="medleymarke">MEDLEY-START</div>` : "")
+        + `<div class="zeile-s${gewaehlt ? " gewaehlt" : ""}${lage ? " medley" : ""}" data-k="${k}" data-n="${n}">
+        <div class="reihe">
+            <span class="griff" draggable="true" title="Ziehen zum Umsortieren">⠿</span>
+            <span class="song"><b>${html(song.titel)}</b><span class="k">${html(unter)}</span></span>
+            ${e.modus ? `<span class="modusmarke">${html(e.modus)}</span>` : ""}
+            <span class="hinten"><b>${html(Vorschau.tonartText(e.tonart || song.tonart || ""))}</b>${singt ? `<span>${html(singt.name)}</span>` : ""}</span>
+        </div>${bearbeiten}
+    </div>` + (lage && lage.ende ? `<div class="medleymarke ende">MEDLEY-ENDE</div>` : "");
+}
+
+// Rechts im Planer: der angetippte Song, wie er in dieser Setliste auf der Bühne aussieht (Tonart und Sänger der Setliste).
+function vorschauZeigen() {
+    const feld = $("slVorschau");
+    const eintrag = sl && sl.sets.flatMap(x => x.eintraege).find(x => x.id === slGewaehlt);
+    const song = eintrag && songVon(eintrag.songID);
+    if (!song) { feld.innerHTML = '<div class="vleer">Tippe links einen Song an. Hier siehst du ihn dann wie auf der Bühne.</div>'; return; }
+    const oben = feld.dataset.eintrag === eintrag.id ? feld.scrollTop : 0;
+    feld.innerHTML = Vorschau.songHTML(song, eintrag, sl.bandID, vorschauArt);
+    feld.dataset.eintrag = eintrag.id;
+    feld.scrollTop = oben;
+}
+$("slVorschau").addEventListener("click", e => {
+    const knopf = e.target.closest("button");
+    if (!knopf) return;
+    if (knopf.dataset.art) {
+        vorschauArt = knopf.dataset.art;
+        try { localStorage.setItem("planer-vorschau", vorschauArt); } catch (_) {}
+        vorschauZeigen();
+    } else if (knopf.dataset.song && verwerfenOk()) {
+        // Zum Song im Song-Editor wechseln (Reiter „Songs“).
+        geaendert = false;
+        document.querySelector('.reiter [data-modus="songs"]').click();
+        oeffnen(knopf.dataset.song);
+    }
+});
+$("slDetailsKnopf").addEventListener("click", () => detailsZeigen(!$("slDetails").classList.contains("offen")));
+
+// Songansicht wie in der App und auf der Leseseite: Transponieren, Akkordzeilen, Liedtext mit Farbmarken.
+const Vorschau = (() => {
+    const KREUZE = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const BES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+    const B_TONARTEN = new Set(["F", "Bb", "Eb", "Ab", "Db", "Gb", "Dm", "Gm", "Cm", "Fm", "Bbm", "Ebm"]);
+    const TEXTFARBEN = { pink: "#FF5CA8", blau: "#2FC4F2", gruen: "#4ADE80", gelb: "#FFD60A", orange: "#FF9F40", rot: "#FF5A5A", lila: "#B48CFF" };
+    const halbton = note => { const i = KREUZE.indexOf(note); return i >= 0 ? i : BES.indexOf(note); };
+    const wurzel = tonart => /^[A-G][#b]/.test(tonart) ? tonart.slice(0, 2) : tonart.slice(0, 1);
+    function halbtoene(von, nach) {
+        if (!nach) return 0;
+        const a = halbton(wurzel(von || "")), b = halbton(wurzel(nach));
+        if (a < 0 || b < 0) return 0;
+        const abstand = (b - a + 12) % 12;
+        return abstand > 6 ? abstand - 12 : abstand;
+    }
+    // Noten deutsch: „H“ statt „B“, „Bb“ bleibt „Bb“. Zwischen zwei Taktstrichen ist alles ein Akkord (`innen`).
+    const ZUSATZ = /^(?:maj|min|dim|aug|sus|add|m|M|[0-9]|[#b+\-°()])*$/;
+    function akkord(wort, schritte, mitB, innen) {
+        const t = /^([A-G][#b]?)([a-zA-Z0-9+\-°()]*)(?:\/([A-G][#b]?))?$/.exec(wort);
+        if (!t || (!innen && !ZUSATZ.test(t[2]))) return wort;
+        const deutsch = note => note === "B" ? "H" : note;
+        const schieben = note => { const i = halbton(note); return deutsch(i < 0 || schritte % 12 === 0 ? note : (mitB ? BES : KREUZE)[(i + schritte % 12 + 12) % 12]); };
+        return schieben(t[1]) + t[2] + (t[3] ? "/" + schieben(t[3]) : "");
+    }
+    const tonartText = tonart => akkord(String(tonart || ""), 0, false, true);
+    // Zerlegt eine Zeile in Inhalt, Klammern `( )` und Notizen (`*`, `**` bis zum nächsten `|`).
+    function teile(zeile) {
+        const ergebnis = []; let aktuell = "", i = 0;
+        const ab = () => { if (aktuell) { ergebnis.push({ art: "inhalt", text: aktuell }); aktuell = ""; } };
+        while (i < zeile.length) {
+            const z = zeile[i];
+            if (z === "*") {
+                ab(); let ende = i;
+                while (ende < zeile.length && zeile[ende] === "*") ende++;
+                const stark = ende - i >= 2;
+                while (ende < zeile.length && zeile[ende] !== "|") ende++;
+                ergebnis.push({ art: stark ? "stark" : "notiz", text: zeile.slice(i, ende) }); i = ende;
+            } else if (z === "(") {
+                ab(); const zu = zeile.indexOf(")", i); const ende = zu < 0 ? zeile.length : zu + 1;
+                ergebnis.push({ art: "klammer", text: zeile.slice(i, ende) }); i = ende;
+            } else { aktuell += z; i++; }
+        }
+        ab(); return ergebnis;
+    }
+    const notizHTML = t => '<span class="notiz' + (t.art === "stark" ? " stark" : "") + '">' + html(t.text.replace(/^\*+\s?/, "")) + "</span>";
+    function akkordeHTML(text, schritte, mitB) {
+        return String(text || "").split("\n").map(zeile => {
+            const erster = zeile.indexOf("|"), letzter = zeile.lastIndexOf("|");
+            let pos = 0;
+            return teile(zeile).map(t => {
+                const start = pos;
+                pos += t.text.length;
+                if (t.art === "inhalt") return html(t.text.replace(/[^\s|]+/g, (w, ab) =>
+                    akkord(w, schritte, mitB, erster >= 0 && start + ab > erster && start + ab < letzter)))
+                    .replace(/\|/g, '<span class="strich">|</span>');  // Taktstriche etwas heller als Grau, wie in der App
+                if (t.art === "klammer") return '<span class="klammer">' + html(t.text) + "</span>";
+                return notizHTML(t);
+            }).join("");
+        }).join("\n");
+    }
+    function textHTML(text) {
+        let aus = "", offen = false, pos = 0, m;
+        const muster = /\[(pink|blau|gruen|gelb|orange|rot|lila)\]|\[\/\]/g;
+        const stueck = roh => roh.split("\n").map(zeile => teile(zeile).map(t =>
+            t.art === "notiz" || t.art === "stark" ? notizHTML(t) : html(t.text)).join("")).join("\n");
+        while ((m = muster.exec(text))) {
+            aus += stueck(text.slice(pos, m.index));
+            if (offen) { aus += "</span>"; offen = false; }
+            if (m[1]) { aus += '<span style="color:' + TEXTFARBEN[m[1]] + '">'; offen = true; }
+            pos = muster.lastIndex;
+        }
+        return aus + stueck(text.slice(pos)) + (offen ? "</span>" : "");
+    }
+    function textBloecke(text) {
+        const bloecke = []; let aktuell = { titel: null, zeilen: [] };
+        for (const zeile of String(text || "").split("\n")) {
+            if (zeile.startsWith("#")) {
+                if (aktuell.titel !== null || aktuell.zeilen.join("").trim()) bloecke.push(aktuell);
+                aktuell = { titel: zeile.replace(/^#+/, "").trim(), zeilen: [] };
+            } else aktuell.zeilen.push(zeile);
+        }
+        if (aktuell.titel !== null || aktuell.zeilen.join("").trim()) bloecke.push(aktuell);
+        return bloecke.map(b => ({ titel: b.titel, text: b.zeilen.join("\n").replace(/^\n+|\s+$/g, "") }));
+    }
+    const artVon = a => daten.abschnittArten.find(x => x.id === a.artID) || { name: "", farbe: "" };
+    const schluessel = name => String(name || "").trim().split(/\s+/)[0].toLowerCase();
+    const stil = farbe => farbe ? ' style="--farbe:' + farbe + '"' : "";
+    function textBlock(b) {
+        const art = daten.abschnittArten.find(a => schluessel(a.name) === schluessel(b.titel));
+        return '<div class="vab"' + stil(art && farben[art.farbe]) + ">" + (b.titel ? "<h3><span>" + html(b.titel) + '</span><span class="linie"></span></h3>' : "")
+            + "<pre>" + textHTML(b.text) + "</pre></div>";
+    }
+    function akkordBlock(a, schritte, mitB) {
+        const art = artVon(a), leer = !String(a.akkorde || "").trim();
+        // Leere Sektion (wiederholt die Akkorde von oben): nur der Name, ohne Linie, wie in der App.
+        return '<div class="vab"' + stil(farben[art.farbe]) + "><h3><span>" + html(art.name || "Abschnitt") + "</span>"
+            + (a.wiederholungen > 1 ? '<span class="mal">×' + html(a.wiederholungen) + "</span>" : "")
+            + (a.hinweis ? "<small>" + html(a.hinweis) + "</small>" : "") + (leer ? "" : '<span class="linie"></span>') + "</h3>"
+            + (leer ? "" : '<pre class="akk">' + akkordeHTML(a.akkorde, schritte, mitB) + "</pre>") + "</div>";
+    }
+    // Text und Akkorde abwechselnd: Strofa zu Strofa, Refren zu Refren; die Akkorde geben die Reihenfolge vor.
+    function beides(s, schritte, mitB) {
+        const bloecke = textBloecke(s.text), abschnitte = s.abschnitte || [], arten = abschnitte.map(a => schluessel(artVon(a).name));
+        const texte = {};
+        bloecke.forEach(b => { if (b.titel) (texte[schluessel(b.titel)] ||= []).push(b); });
+        const verwendet = {}, benutzt = new Set(); let aus = "";
+        abschnitte.forEach((a, i) => {
+            const liste = texte[arten[i]] || [], n = verwendet[arten[i]] || 0;
+            aus += akkordBlock(a, schritte, mitB);
+            if (n < liste.length) { aus += textBlock(liste[n]); benutzt.add(liste[n]); verwendet[arten[i]] = n + 1; }
+        });
+        bloecke.forEach(b => { if (!benutzt.has(b) && (b.text || b.titel)) aus += textBlock(b); });
+        return aus;
+    }
+    function songHTML(s, e, bandID, art) {
+        const tonart = e.tonart || s.tonart || "", schritte = halbtoene(s.tonart || "", e.tonart), mitB = B_TONARTEN.has(tonart);
+        const singt = e.saengerID && daten.saenger.find(x => x.id === e.saengerID);
+        const hatText = String(s.text || "").trim(), hatAkkorde = (s.abschnitte || []).length;
+        const feld = (titel, wert) => "<span><i>" + titel + "</i>" + wert + "</span>";
+        const angaben = [singt ? feld("SÄNGER", '<span class="singt">' + html(singt.name) + "</span>") : "",
+            s.bpm ? feld("TEMPO", html(s.bpm) + " bpm") : "", s.taktart ? feld("TAKT", html(s.taktart)) : "",
+            rhythmenVon(s).length ? feld("RHYTHMUS", html(rhythmenVon(s).join(", "))) : ""].filter(Boolean).join("");
+        const zettel = String((s.notizen || {})[bandID] || "").trim();
+        const leer = was => '<div class="vleer" style="padding-top: 40px;">Zu diesem Song gibt es noch ' + was + ".</div>";
+        const inhalt = art === "text" ? (hatText ? textBloecke(s.text).map(textBlock).join("") : leer("keinen Text"))
+            : art === "akkorde" ? (hatAkkorde ? s.abschnitte.map(a => akkordBlock(a, schritte, mitB)).join("") : leer("keine Akkorde"))
+            : (hatText || hatAkkorde ? beides(s, schritte, mitB) : leer("keinen Inhalt"));
+        const wahl = [["beides", "Beides"], ["akkorde", "Akkorde"], ["text", "Text"]].map(([wert, name]) =>
+            '<button type="button" data-art="' + wert + '"' + (wert === art ? ' class="an"' : "") + ">" + name + "</button>").join("");
+        return '<div class="vkopf"><div class="oben"><div class="gross"><b>' + html(tonartText(tonart) || "–") + "</b><span>TONART</span></div>"
+            + '<div class="trenner"></div><div class="wer"><b>' + html(s.titel) + "</b>" + (s.kuenstler ? "<span>" + html(s.kuenstler) + "</span>" : "") + "</div>"
+            + (e.modus ? '<div class="modusgross">' + html(e.modus) + "</div>" : "") + "</div>"
+            + (angaben ? '<div class="angaben">' + angaben + "</div>" : "")
+            + '<div class="werkzeug"><div class="reiter">' + wahl + '</div><span style="flex: 1;"></span>'
+            + '<button type="button" class="knopf klein" data-song="' + html(s.id) + '">✎ Song bearbeiten</button></div></div>'
+            + (zettel ? '<div class="vzettel"><span aria-hidden="true">✎</span><b>' + html(zettel) + "</b></div>" : "")
+            + inhalt;
+    }
+    return { songHTML, tonartText };
+})();
 
 // Kopf der Setliste
 $("slName").addEventListener("input", () => {
@@ -1205,13 +1455,22 @@ $("sets").addEventListener("change", e => {
         // Wie in der App: Der Sänger bringt seine eigene Tonart mit.
         const tag = wert && (songVon(eintrag.songID) || { saenger: [] }).saenger.find(t => t.saengerID === wert);
         eintrag.tonart = tag && tag.tonart ? tag.tonart : null;
-        setsZeigen();
     }
+    // Zeile und Songansicht zeigen sofort die neue Tonart, den Sänger und den Modus.
+    setsZeigen();
     markieren(true);
 });
 $("sets").addEventListener("click", e => {
     const aktion = e.target.dataset.aktion;
-    if (!aktion) return;
+    if (!aktion) {
+        // Tipp auf eine Zeile: Sie wird gewählt, rechts erscheint der Song.
+        const reihe = e.target.closest(".reihe");
+        if (!reihe || e.target.closest(".griff")) return;
+        const zeile = reihe.closest(".zeile-s");
+        const id = sl.sets[Number(zeile.dataset.k)].eintraege[Number(zeile.dataset.n)].id;
+        if (id !== slGewaehlt) { slGewaehlt = id; setsZeigen(); }
+        return;
+    }
     const k = Number(e.target.closest(".set").dataset.k);
     const sets = sl.sets;
     if (aktion.startsWith("e-")) {
@@ -1272,9 +1531,11 @@ $("sets").addEventListener("drop", e => {
 $("sets").addEventListener("dragend", () => { gezogen = null; zielMarkenWeg(); });
 
 // Songs hinzufügen
-let auswahlSet = 0;
+let auswahlSet = 0, auswahlNach = null;
 function auswahlOeffnen(k) {
     auswahlSet = k;
+    // Wie in der App: Neue Songs kommen hinter den angetippten Song; ohne Auswahl ans Ende dieses Sets.
+    auswahlNach = slGewaehlt;
     $("auswahlSuche").value = "";
     $("auswahl").classList.add("offen");
     auswahlZeigen();
@@ -1290,7 +1551,9 @@ function auswahlZeigen() {
         .filter(s => s.bandIDs.includes(sl.bandID))
         .filter(s => !suche || (s.titel + " " + s.kuenstler).toLowerCase().includes(suche))
         .sort((a, b) => a.titel.localeCompare(b.titel, "de"));
-    $("auswahlListe").innerHTML = `<div class="anzahl">${songs.length} Songs von ${html((bandVon(sl.bandID) || {}).name || "")} → ${html(sl.sets[auswahlSet].name)}</div>` +
+    const hinter = sl.sets.flatMap(x => x.eintraege).find(y => y.id === auswahlNach);
+    const wohin = hinter ? "hinter „" + ((songVon(hinter.songID) || {}).titel || "") + "“" : "ans Ende von " + sl.sets[auswahlSet].name;
+    $("auswahlListe").innerHTML = `<div class="anzahl">${songs.length} Songs von ${html((bandVon(sl.bandID) || {}).name || "")} → ${html(wohin)}</div>` +
         songs.map(s => `<div class="eintrag${benutzt.has(s.id) ? " benutzt" : ""}" data-id="${s.id}">
             <div><div class="t">${html(s.titel)}</div><div class="k">${html(s.kuenstler)}</div></div>
             <div class="ton">${html(s.tonart)}${s.bpm ? " · " + s.bpm : ""} <span class="plus">＋</span></div>
@@ -1302,7 +1565,17 @@ $("auswahl").addEventListener("click", e => { if (e.target === $("auswahl")) aus
 $("auswahlListe").addEventListener("click", e => {
     const eintrag = e.target.closest(".eintrag");
     if (!eintrag) return;
-    sl.sets[auswahlSet].eintraege.push({ id: uuid(), songID: eintrag.dataset.id });
+    const neu = { id: uuid(), songID: eintrag.dataset.id };
+    const ziel = sl.sets.find(x => x.eintraege.some(y => y.id === auswahlNach));
+    if (ziel) {
+        const platz = ziel.eintraege.findIndex(y => y.id === auswahlNach);
+        // Steht der gewählte Song in einem Medley, gehört der neue dazu.
+        if (ziel.eintraege[platz].medleyID) neu.medleyID = ziel.eintraege[platz].medleyID;
+        ziel.eintraege.splice(platz + 1, 0, neu);
+    } else sl.sets[auswahlSet].eintraege.push(neu);
+    // Der nächste kommt hinter diesen: So bleibt die Reihenfolge der Tipps.
+    auswahlNach = neu.id;
+    if (!slGewaehlt) slGewaehlt = neu.id;
     setsZeigen();
     auswahlZeigen();
     markieren(true);
