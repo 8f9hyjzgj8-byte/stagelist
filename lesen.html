@@ -84,19 +84,52 @@ h2.gruppe:first-child { margin-top: 4px; }
 .marke.jetzt { background: var(--jetzt); color: #000; }
 .marke.dann { border: 1px solid var(--jetzt); color: var(--jetzt); }
 .marke.neu { background: #4ADE80; color: #000; }
-/* Wie in der App: Der laufende Song ist weiß hinterlegt, der nächste gelb; beide mit dunkler Schrift. */
-.zeile.laeuft { background: var(--text); }
-.zeile.naechster { background: var(--jetzt); }
-.zeile.laeuft, .zeile.naechster { color: #000; border-top-color: transparent; }
-.zeile.laeuft .nr, .zeile.laeuft .mitte span, .zeile.naechster .nr, .zeile.naechster .mitte span { color: rgba(0,0,0,.68); }
-.zeile.laeuft .tonart, .zeile.naechster .tonart { color: #000; }
-.zeile.laeuft .saenger, .zeile.naechster .saenger { border-color: rgba(0,0,0,.55); }
-.zeile.laeuft .saenger i, .zeile.naechster .saenger i { background: #000; }
-.zeile.laeuft .modus, .zeile.naechster .modus { background: rgba(0,0,0,.16); }
-.zeile.laeuft .marke { background: #000; color: var(--text); border: 0; }
-.zeile.naechster .marke { background: #000; color: var(--jetzt); border: 0; }
-/* „Neu“ bleibt immer grün, auch auf der gelben Zeile des nächsten Songs; ein dunkler Rand hebt es dort ab. */
-.zeile.laeuft .marke.neu, .zeile.naechster .marke.neu { background: #4ADE80; color: #000; border: 0; box-shadow: 0 0 0 2px rgba(0,0,0,.75); }
+/* Nur der laufende Song ist gefüllt. Der nächste trägt einen Rahmen in derselben Farbe: Es gibt nur eine Farbe zu lernen. */
+.zeile.laeuft { background: var(--jetzt); color: #000; border-top-color: transparent; }
+.zeile.laeuft .nr, .zeile.laeuft .mitte span { color: rgba(0,0,0,.68); }
+.zeile.laeuft .tonart { color: #000; }
+.zeile.laeuft .saenger { border-color: rgba(0,0,0,.55); }
+.zeile.laeuft .saenger i { background: #000; }
+.zeile.laeuft .modus { background: rgba(0,0,0,.16); }
+.zeile.laeuft .marke { background: #000; color: var(--jetzt); border: 0; }
+.zeile.laeuft .marke.neu { background: #4ADE80; color: #000; box-shadow: 0 0 0 2px rgba(0,0,0,.75); }
+.zeile.naechster { box-shadow: inset 0 0 0 2px var(--jetzt); border-top-color: transparent; }
+/* Playlist im Live-Betrieb: oben fest der laufende und der nächste Song, darunter, was noch kommt. */
+.playlist { border-color: rgba(245,166,35,.45); }
+.playlist .zeile { padding-top: 14px; padding-bottom: 14px; }
+.playlist .zeile .mitte b { font-size: 21px; }
+.playlist .zeile.naechster .mitte b { font-size: 18px; }
+.playlist .zeile.naechster { padding-top: 11px; padding-bottom: 11px; }
+.davor { display: block; width: 100%; padding: 8px 14px; color: var(--gedimmt); font-size: 13px; font-weight: 600; text-align: center; }
+.teiler .seite .davor { padding: 6px 12px; font-size: 12px; }
+/* Leiter: Zeile und Flagge nebeneinander. */
+.paar { display: flex; align-items: stretch; border-top: 1px solid var(--rand); }
+.paar .zeile { flex: 1; min-width: 0; border-top: 0; }
+.flagge { flex: none; width: 48px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--gedimmt); }
+.flagge[aria-pressed="true"] { color: var(--jetzt); }
+.leiter { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+.leiter .knopf { flex: 1 1 auto; min-width: 0; height: 48px; gap: 8px; white-space: nowrap; overflow: hidden; }
+.leiter .knopf span { overflow: hidden; text-overflow: ellipsis; }
+.leiter .knopf.haupt { flex: 3 1 200px; background: var(--jetzt); color: #000; font-weight: 800; }
+.leiter .knopf.rot { color: #FF7A7A; }
+.leiter .info { flex: 1 1 100%; color: var(--gedimmt); font-size: 14px; }
+.set h2 .plus { flex: none; margin: -6px -6px -6px 0; width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,.08); text-align: center; font-size: 20px; }
+.set h2 small { margin-left: auto; }
+.konto { margin: 26px auto 10px; max-width: 420px; text-align: center; color: var(--gedimmt); font-size: 14px; }
+.konto button.link { color: var(--gedimmt); text-decoration: underline; padding: 8px; }
+.konto form { display: grid; gap: 8px; margin-top: 10px; text-align: left; }
+.konto input, #lupe input { width: 100%; height: 46px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--rand); background: var(--karte); color: var(--text); font: inherit; }
+.konto .fehler { color: #FF7A7A; }
+#lupe { position: fixed; inset: 0; z-index: 20; display: flex; justify-content: center; background: rgba(0,0,0,.6); padding: calc(10px + env(safe-area-inset-top)) 10px 10px; }
+#lupe .blatt { display: flex; flex-direction: column; width: 100%; max-width: 620px; max-height: 100%; border-radius: 16px; background: var(--leiste); border: 1px solid var(--rand); overflow: hidden; }
+#lupe .oben { display: flex; gap: 8px; padding: 10px; border-bottom: 1px solid var(--rand); }
+#lupe .wohin { padding: 8px 14px; color: var(--gedimmt); font-size: 13px; }
+#lupe .liste { overflow-y: auto; overscroll-behavior: contain; }
+#lupe .zeile .plus { flex: none; width: 40px; height: 36px; border-radius: 10px; background: rgba(255,255,255,.08); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; }
+#lupe .zeile.frisch .plus { background: #4ADE80; color: #000; }
+#lupe .zeile .mal { flex: none; color: var(--gedimmt); font-size: 13px; font-weight: 700; }
+#meldung { position: fixed; left: 50%; bottom: calc(110px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 30; max-width: 90%;
+  padding: 10px 16px; border-radius: 12px; background: #3A1414; border: 1px solid #FF7A7A; color: #FFD9D9; font-weight: 600; }
 /* Wirklich gespielt (war im Live-Betrieb einmal der laufende Song): grau hinterlegt, graue Schrift. Übersprungene bleiben normal. */
 .zeile.vorbei, .teiler .seite .zeile.gespielt { background: #2B2E37; color: var(--gedimmt); }
 .zeile.vorbei .tonart, .zeile.gespielt .tonart { color: var(--gedimmt); }
@@ -128,10 +161,12 @@ body.live main { padding-bottom: 96px; }
   .teiler .seite .zeile { padding: 8px 12px; gap: 8px; }
   .teiler .seite .zeile .mitte b { font-size: 15px; }
   .teiler .seite .zeile.aktuell { background: rgba(255,255,255,.1); box-shadow: inset 4px 0 0 var(--text); }
-  /* Live geht vor: Der laufende und der nächste Song behalten ihre Farbe, auch wenn einer davon offen ist. */
-  .teiler .seite .zeile.laeuft { background: var(--text); box-shadow: none; }
-  .teiler .seite .zeile.naechster { background: var(--jetzt); box-shadow: none; }
-  .teiler .seite .zeile.aktuell.laeuft, .teiler .seite .zeile.aktuell.naechster { box-shadow: inset 4px 0 0 #000; }
+  /* Live geht vor: Der laufende Song bleibt gefüllt, der nächste behält seinen Rahmen, auch wenn einer davon offen ist. */
+  .teiler .seite .zeile.laeuft { background: var(--jetzt); box-shadow: none; }
+  .teiler .seite .zeile.naechster { background: none; box-shadow: inset 0 0 0 2px var(--jetzt); }
+  .teiler .seite .zeile.aktuell.laeuft { box-shadow: inset 4px 0 0 #000; }
+  .teiler .seite .zeile.aktuell.naechster { background: rgba(255,255,255,.1); }
+  .teiler .seite .playlist-kopf .zeile .mitte b { font-size: 16px; }
   body:not(.live) .teiler .seite .zeile.aktuell { background: rgba(245,166,35,.16); box-shadow: inset 4px 0 0 var(--jetzt); }
   .teiler .seite .marke { font-size: 10px; padding: 1px 5px; }
   body.live .teiler .seite { max-height: calc(100vh - 170px - env(safe-area-inset-top)); }
@@ -255,7 +290,9 @@ body.geteilt .blaettern .knopf { height: 44px; }
   <button class="knopf" id="neuLaden" aria-label="Neu laden">↻</button>
 </header>
 <main id="haupt"><div class="hinweis">Lädt …</div></main>
-<button id="livebalken" hidden><span class="marke jetzt">Live</span><span class="texte"><b id="liveJetzt"></b><span id="liveDann"></span></span><span aria-hidden="true">›</span></button>
+<div id="lupe" hidden><div class="blatt"><div class="oben"><input id="lupeSuche" type="search" placeholder="Titel oder Künstler" autocomplete="off" aria-label="Song suchen"><button class="knopf" id="lupeFertig">Fertig</button></div><div class="wohin" id="lupeWohin"></div><div class="liste" id="lupeListe"></div></div></div>
+<div id="meldung" role="alert" hidden></div>
+<button id="livebalken" hidden><span class="marke jetzt">Jetzt</span><span class="texte"><b id="liveJetzt"></b><span id="liveDann"></span></span><span aria-hidden="true">›</span></button>
 
 <script>
 "use strict";
@@ -350,6 +387,7 @@ async function puls() {
   const k = ort().k;
   if (k.length < 32 || !daten) return laden();
   let neu;
+  const gefragtUm = Date.now();
   try {
     const antwort = await fetch(SERVER + "/rest/v1/rpc/lese_puls", {
       method: "POST", cache: "no-store",
@@ -361,7 +399,8 @@ async function puls() {
     neu = await antwort.json();
   } catch (_) { return; }  // kein Netz: Der gezeigte Stand bleibt stehen
   if (!neu) return laden();  // Link erneuert oder abgeschaltet
-  const liveNeu = neu.live || null, liveGeaendert = JSON.stringify(liveNeu) !== JSON.stringify(live);
+  // Der Leiter hat gerade selbst etwas gemeldet: Diese Antwort kann noch den alten Stand tragen.
+  const liveNeu = liveSchreibt || gefragtUm < liveGemeldetUm ? live : (neu.live || null), liveGeaendert = JSON.stringify(liveNeu) !== JSON.stringify(live);
   live = liveNeu;
   if (neu.nr !== daten.nr || veraltet) { await laden(); if (liveGeaendert) liveFolgen(); }
   else if (liveGeaendert) { if (!liveFolgen()) zeigen(); }
@@ -402,7 +441,7 @@ function liveMarke(l, e) {
   return klein(e.id) === klein(live.aktuellID) ? "laeuft" : (klein(e.id) === klein(live.naechsterID) ? "naechster" : "");
 }
 function markeHTML(art) {
-  return art === "laeuft" ? '<span class="marke jetzt">Live</span>' : (art === "naechster" ? '<span class="marke dann">Next</span>' : "");
+  return art === "laeuft" ? '<span class="marke jetzt">Jetzt</span>' : (art === "naechster" ? '<span class="marke dann">Danach</span>' : "");
 }
 // „NEU“: Der Song kam im laufenden Live-Betrieb in die Setliste. Die Marke verschwindet, sobald er läuft oder gespielt ist.
 function neuHTML(l, e, art) {
@@ -420,7 +459,7 @@ function liveZeigen() {
   const titel = id => { const e = alleEintraege(liste).find(x => klein(x.id) === klein(id)); return e && song(e.songID) ? song(e.songID).titel : ""; };
   const jetzt = titel(live.aktuellID), dann = titel(live.naechsterID);
   document.getElementById("liveJetzt").textContent = jetzt ? jetzt : "Gleich geht es los";
-  document.getElementById("liveDann").textContent = dann ? "Next: " + dann : (jetzt ? "Letzter Song" : liste.name);
+  document.getElementById("liveDann").textContent = dann ? "Danach: " + dann : (jetzt ? "Letzter Song" : liste.name);
 }
 
 // ---- Hilfen -----------------------------------------------------------------------------------
@@ -616,6 +655,9 @@ function offlineHTML() { return veraltet ? '<div class="offline">Keine Verbindun
 
 function zeigen() {
   liveZeigen();
+  // Wer gerade E-Mail oder Passwort tippt, verliert die Eingabe nicht durch eine Aktualisierung im Hintergrund.
+  const tippt = document.activeElement;
+  if (tippt && tippt.tagName === "INPUT" && tippt.closest("#anmelden")) return;
   document.body.classList.remove("geteilt");
   if (!daten) {
     wachHalten(false);
@@ -655,7 +697,7 @@ function wahlZeigen() {
 function uebersichtZeigen() {
   kopf("StageList", ROLLEN[aktiveRolle()][0] + " · " + standText(), false, false);
   const listen = daten.setlisten || [];
-  if (!listen.length) { haupt.innerHTML = offlineHTML() + '<div class="hinweis"><b>Keine aktive Setliste</b>Sobald die Band eine Setliste anlegt, erscheint sie hier.</div>'; return; }
+  if (!listen.length) { haupt.innerHTML = offlineHTML() + '<div class="hinweis"><b>Keine aktive Setliste</b>Sobald die Band eine Setliste anlegt, erscheint sie hier.</div>' + kontoHTML(); return; }
   const karte = l => {
     const band = (daten.bands || {})[klein(l.bandID)], anzahl = alleEintraege(l).length;
     return '<button class="karte" data-liste="' + html(l.id) + '"' + (band && farbe(band.farbe) ? ' style="--bandfarbe:' + farbe(band.farbe) + '"' : "") + ">"
@@ -670,37 +712,86 @@ function uebersichtZeigen() {
     + '<button data-reiter="proben"' + (zeigeProben ? ' class="aktiv"' : "") + ">Proben · " + proben.length + "</button></div>" : "";
   const gezeigt = zeigeProben ? proben : gigs;
   haupt.innerHTML = offlineHTML() + reiter + (gezeigt.length ? gezeigt.map(karte).join("")
-    : '<div class="hinweis"><b>Keine aktive Setliste</b>Sobald die Band eine Setliste anlegt, erscheint sie hier.</div>');
+    : '<div class="hinweis"><b>Keine aktive Setliste</b>Sobald die Band eine Setliste anlegt, erscheint sie hier.</div>') + kontoHTML();
+}
+
+// Alle Einträge einer Setliste der Reihe nach, jeder mit seinem Set, seinem Platz darin und seiner Nummer.
+function flach(l) {
+  const aus = []; let nr = 0;
+  l.sets.forEach((set, k) => set.eintraege.forEach((e, i) => aus.push({ e, set, k, i, nr: ++nr })));
+  return aus;
+}
+// Playlist im Live-Betrieb: der laufende Song, der nächste, die schon gespielten und was noch offen ist.
+// `null`, solange die Band nicht mit dieser Setliste live ist.
+function playlist(l) {
+  if (!live || klein(live.setlisteID) !== klein(l.id)) return null;
+  const alle = flach(l), finde = id => id ? alle.find(x => klein(x.e.id) === klein(id)) : null;
+  const jetzt = finde(live.aktuellID) || null;
+  let dann = finde(live.naechsterID) || null;
+  if (dann === jetzt) dann = null;
+  // Nur wirklich gespielte Songs verschwinden nach oben. Übersprungene bleiben in der Liste stehen: Die Band kann noch zu ihnen zurück.
+  const davor = alle.filter(x => x !== jetzt && x !== dann && gespielt(l, x.e));
+  const rest = alle.filter(x => x !== jetzt && x !== dann && !davor.includes(x));
+  return { alle, jetzt, dann, davor, rest };
+}
+let davorOffen = false;  // Playlist: Die gespielten Songs sind aufgeklappt.
+
+// Eine Zeile der Setliste. `seite`: schmale Fassung für die linke Spalte im Song; `offen`: der dort geöffnete Eintrag.
+function reihe(l, x, wie = {}) {
+  const e = x.e, s = song(e.songID), sg = saenger(e.saengerID);
+  if (!s) return wie.seite ? "" : '<div class="zeile"><span class="nr">' + x.nr + '</span><span class="mitte"><span>Song nicht mehr vorhanden</span></span></div>';
+  const lage = medleyLage(x.set.eintraege, x.i), marke = liveMarke(l, e), ist = wie.offen && e.id === wie.offen.id;
+  // Oben in der Playlist stehen die Songs einzeln; dort sagt „Medley 2/3“, wozu sie gehören.
+  const medleyText = wie.oben && lage ? "Medley " + lage.platz + "/" + lage.anzahl : "";
+  const unter = wie.seite
+    ? [(s.rhythmus || []).join(", "), s.bpm ? s.bpm + " bpm" : "", (sg || {}).name, medleyText]
+    : [s.kuenstler, (s.rhythmus || []).join(", "), s.bpm ? s.bpm + " bpm" : "", medleyText];  // Der Rhythmus steht direkt vor dem Tempo.
+  const klassen = "zeile" + (lage && !wie.oben ? " medley" : "") + (lage && !lage.start && !wie.seite && !wie.oben ? " weiter" : "")
+    + (ist ? " aktuell" : "") + (marke ? " " + marke : (gespielt(l, e) ? (wie.seite ? " gespielt" : " vorbei") : ""));
+  const knopf = '<button class="' + klassen + '" data-eintrag="' + html(e.id) + '"' + (ist ? ' aria-current="true"' : "") + ">"
+    + '<span class="nr">' + x.nr + "</span>"
+    + '<span class="mitte"><b>' + html(s.titel) + "</b><span>" + html(unter.filter(Boolean).join(" · ")) + "</span></span>"
+    + markeHTML(marke) + neuHTML(l, e, marke)
+    + (!wie.seite && e.modus ? '<span class="modus">' + html(e.modus) + "</span>" : "")
+    + (wie.seite ? "" : (sg ? '<span class="saenger"' + (farbe(sg.farbe) ? ' style="--farbe:' + farbe(sg.farbe) + '"' : "") + "><i></i>" + html(sg.name) + "</span>"
+          : (e.stimme ? '<span class="saenger"><i></i>' + (e.stimme === "m" ? "M" : "W") + "</span>" : "")))
+    + hintenHTML(e, s) + "</button>";
+  // Leiter im Live-Betrieb: Die Flagge macht diesen Song zum nächsten; noch einmal tippen hebt es auf.
+  const flagge = wie.flagge && marke !== "laeuft"
+    ? '<button class="flagge" data-flagge="' + html(e.id) + '" aria-pressed="' + (marke === "naechster") + '" aria-label="'
+      + (marke === "naechster" ? "Als Nächster markiert, antippen hebt es auf" : "Als nächsten Song markieren") + '">⚑</button>' : "";
+  const zeile = flagge ? '<div class="paar">' + knopf + flagge + "</div>" : knopf;
+  return wie.oben ? zeile : medleyMarkeHTML(lage, true) + zeile + medleyMarkeHTML(lage, false);
+}
+// Oberer Teil der Playlist: aufklappbar die Songs davor, dann fest der laufende und der nächste Song.
+function playlistKopfHTML(l, p, wie) {
+  const anzahl = p.davor.length;
+  const davor = anzahl ? '<button class="davor" data-davor aria-expanded="' + davorOffen + '">' + (davorOffen ? "↓ " : "↑ ")
+    + anzahl + (anzahl === 1 ? " gespielter Song" : " gespielte Songs") + (davorOffen ? " ausblenden" : "") + "</button>"
+    + (davorOffen ? p.davor.map(x => reihe(l, x, wie)).join("") : "") : "";
+  return davor
+    + (p.jetzt ? reihe(l, p.jetzt, Object.assign({ oben: true }, wie)) : '<div class="pause">Gleich geht es los</div>')
+    + (p.dann ? reihe(l, p.dann, Object.assign({ oben: true }, wie)) : (p.jetzt ? '<div class="pause">Danach: Ende der Setliste</div>' : ""));
 }
 
 function setlisteZeigen(l) {
   const band = (daten.bands || {})[klein(l.bandID)];
   kopf(l.name || "Setliste", datumText(l.datum) + (band ? " · " + band.name : "") + " · " + standText(), true, false);
-  let nr = 0;
-  haupt.innerHTML = offlineHTML() + l.sets.map((set, k) => {
+  const p = playlist(l), alle = p ? p.alle : flach(l), wie = { flagge: !!p && leiter() };
+  // Im Live-Betrieb zeigt jedes Set nur, was noch kommt; Sets ohne offene Songs fallen weg.
+  const sichtbar = p ? new Set(p.rest) : null;
+  const sets = l.sets.map((set, k) => {
+    const eigene = alle.filter(x => x.k === k), gezeigt = sichtbar ? eigene.filter(x => sichtbar.has(x)) : eigene;
+    if (p && !gezeigt.length && eigene.length) return "";
     const sekunden = set.eintraege.reduce((s, e) => s + ((song(e.songID) || {}).dauerSekunden || 0), 0);
-    const zeilen = set.eintraege.map((e, i) => {
-      nr++;
-      const s = song(e.songID), sg = saenger(e.saengerID);
-      const lage = medleyLage(set.eintraege, i), medley = !!lage, weiter = medley && !lage.start;
-      if (!s) return '<div class="zeile"><span class="nr">' + nr + '</span><span class="mitte"><span>Song nicht mehr vorhanden</span></span></div>';
-      // Der Rhythmus steht direkt vor dem Tempo.
-      const unter = [s.kuenstler, (s.rhythmus || []).join(", "), s.bpm ? s.bpm + " bpm" : ""].filter(Boolean).join(" · ");
-      const marke = liveMarke(l, e);
-      return medleyMarkeHTML(lage, true) + '<button class="zeile' + (medley ? " medley" : "") + (weiter ? " weiter" : "") + (marke ? " " + marke : (gespielt(l, e) ? " vorbei" : ""))
-        + '" data-eintrag="' + html(e.id) + '">'
-        + '<span class="nr">' + nr + "</span>"
-        + '<span class="mitte"><b>' + html(s.titel) + "</b><span>" + html(unter) + "</span></span>"
-        + markeHTML(marke) + neuHTML(l, e, marke)
-        + (e.modus ? '<span class="modus">' + html(e.modus) + "</span>" : "")
-        + (sg ? '<span class="saenger"' + (farbe(sg.farbe) ? ' style="--farbe:' + farbe(sg.farbe) + '"' : "") + "><i></i>" + html(sg.name) + "</span>"
-              : (e.stimme ? '<span class="saenger"><i></i>' + (e.stimme === "m" ? "M" : "W") + "</span>" : ""))
-        + hintenHTML(e, s) + "</button>" + medleyMarkeHTML(lage, false);
-    }).join("");
-    return '<section class="set"><h2>' + html(set.name || "Set " + (k + 1)) + "<small>" + set.eintraege.length + (set.eintraege.length === 1 ? " Song" : " Songs")
-      + (sekunden ? " · " + dauerText(sekunden) : "") + "</small></h2>" + (zeilen || '<div class="pause">Noch keine Songs</div>')
+    return '<section class="set"><h2><span>' + html(set.name || "Set " + (k + 1)) + "</span><small>"
+      + (p ? "noch " + gezeigt.length + " von " + eigene.length : eigene.length + (eigene.length === 1 ? " Song" : " Songs") + (sekunden ? " · " + dauerText(sekunden) : ""))
+      + "</small>" + (leiter() ? '<button class="plus" data-plus="' + k + '" aria-label="Song zu diesem Set hinzufügen">+</button>' : "") + "</h2>"
+      + (gezeigt.map(x => reihe(l, x, wie)).join("") || '<div class="pause">Noch keine Songs</div>')
       + (set.pauseMinuten > 0 ? '<div class="pause">Pause ' + html(set.pauseMinuten) + " min</div>" : "") + "</section>";
   }).join("");
+  haupt.innerHTML = offlineHTML() + leiterLeisteHTML(l, null)
+    + (p ? '<section class="set playlist">' + playlistKopfHTML(l, p, wie) + "</section>" : "") + sets;
 }
 
 // Ende jeder Setlisten-Zeile: die Tonart, in der der Song in dieser Setliste gespielt wird.
@@ -708,18 +799,13 @@ function hintenHTML(e, s) {
   return '<span class="hinten"><span class="tonart mono">' + html(tonartText(e.tonart || s.tonart || "")) + "</span></span>";
 }
 // Linke Spalte der geteilten Ansicht: die ganze Setliste, der offene Song markiert, wirklich gespielte grau.
+// Im Live-Betrieb als Playlist: oben der laufende und der nächste Song, darunter, was noch kommt.
 function seiteHTML(l, aktuell) {
-  let nr = 0;
-  return l.sets.map((set, k) => "<h2>" + html(set.name || "Set " + (k + 1)) + "</h2>" + set.eintraege.map((e, i) => {
-    nr++;
-    const s = song(e.songID);
-    if (!s) return "";
-    const ist = e.id === aktuell.id, marke = liveMarke(l, e), lage = medleyLage(set.eintraege, i);
-    return medleyMarkeHTML(lage, true) + '<button class="zeile' + (lage ? " medley" : "") + (ist ? " aktuell" : "") + (marke ? " " + marke : (gespielt(l, e) ? " gespielt" : "")) + '" data-eintrag="' + html(e.id) + '"'
-      + (ist ? ' aria-current="true"' : "") + '><span class="nr">' + nr + "</span>"
-      + '<span class="mitte"><b>' + html(s.titel) + "</b><span>" + html([(s.rhythmus || []).join(", "), s.bpm ? s.bpm + " bpm" : "", (saenger(e.saengerID) || {}).name].filter(Boolean).join(" · ")) + "</span></span>"
-      + markeHTML(marke) + neuHTML(l, e, marke) + hintenHTML(e, s) + "</button>" + medleyMarkeHTML(lage, false);
-  }).join("")).join("");
+  const p = playlist(l), alle = p ? p.alle : flach(l), wie = { seite: true, offen: aktuell }, sichtbar = p ? new Set(p.rest) : null;
+  return (p ? '<div class="playlist-kopf">' + playlistKopfHTML(l, p, wie) + "</div>" : "") + l.sets.map((set, k) => {
+    const gezeigt = alle.filter(x => x.k === k && (!sichtbar || sichtbar.has(x)));
+    return gezeigt.length || !p ? "<h2>" + html(set.name || "Set " + (k + 1)) + "</h2>" + gezeigt.map(x => reihe(l, x, wie)).join("") : "";
+  }).join("");
 }
 
 function songZeigen(l, e) {
@@ -802,20 +888,23 @@ function songZeigen(l, e) {
   haupt.classList.add("breit");
   if (geteilt) {
     // Im Splitmodus gehört die ganze Breite dem Text und den Akkorden; geblättert wird über die Knöpfe darüber.
-    haupt.innerHTML = offlineHTML() + kopfTeil + blaettern + inhalt;  // im Split zeigt der Kopf „Medley 2/3“
+    haupt.innerHTML = offlineHTML() + kopfTeil + leiterLeisteHTML(l, e) + blaettern + inhalt;  // im Split zeigt der Kopf „Medley 2/3“
     window.scrollTo(0, 0);
     splitHoehe();
     if (gleicherSong) haupt.querySelectorAll(".feld").forEach(f => { f.scrollTop = felderGerollt[f.dataset.feld] || 0; });
   } else {
     haupt.innerHTML = offlineHTML() + '<div class="teiler"><nav class="seite" aria-label="Setliste">' + seiteHTML(l, e) + "</nav><div>"
-      + kopfTeil + '<div class="inhalt">' + inhalt + "</div>" + (r === "drummer" ? "" : durchHTML(false)) + blaettern + "</div></div>";
+      + kopfTeil + '<div class="inhalt">' + inhalt + "</div>" + (r === "drummer" ? "" : durchHTML(false)) + leiterLeisteHTML(l, e) + blaettern + "</div></div>";
     const seite = haupt.querySelector(".seite"), marke = seite.querySelector(".aktuell");
+    const jetztZeile = seite.querySelector(".playlist-kopf");
     if (gerollt !== null) seite.scrollTop = gerollt;
     // Nur beim Wechsel des Songs nach oben springen, nicht bei jeder Aktualisierung im Hintergrund.
     if (!gleicherSong) {
       window.scrollTo(0, 0);
       // Der offene Song steht in der linken Spalte im Blick (nur diese Spalte rollt, nicht die Seite).
-      if (marke && seite.clientHeight) seite.scrollTop = Math.max(0, marke.offsetTop - seite.clientHeight / 3);
+      // Im Live-Betrieb steht die Playlist oben; sonst rückt der offene Song in den Blick.
+      if (jetztZeile) seite.scrollTop = 0;
+      else if (marke && seite.clientHeight) seite.scrollTop = Math.max(0, marke.offsetTop - seite.clientHeight / 3);
     }
   }
   gezeigterEintrag = e.id;
@@ -889,6 +978,236 @@ async function wachHalten(an) {
   } catch (_) {}
 }
 
+// ---- Leiter: anmelden, Live steuern, Songs hinzufügen -------------------------------------------
+// Wer sich mit seinem Konto anmeldet, bekommt zusätzlich die Bedienung für den Auftritt. Die Anmeldung teilt sich
+// die Seite mit der Web-App (gleicher Speicher): Wer dort angemeldet ist, ist es auch hier.
+let sitzung = null;
+try { sitzung = JSON.parse(localStorage.getItem("sitzung")); } catch (_) {}
+let kontoOffen = false, kontoFehler = "";
+let liveSchreibt = 0, liveGemeldetUm = 0;
+function leiter() { return !!sitzung && !veraltet; }
+function sitzungMerken(a) {
+  sitzung = { zugriff: a.access_token, erneuerung: a.refresh_token, ablauf: Date.now() + a.expires_in * 1000, userID: a.user.id };
+  try { localStorage.setItem("sitzung", JSON.stringify(sitzung)); } catch (_) {}
+}
+function sitzungEnde() { sitzung = null; try { localStorage.removeItem("sitzung"); } catch (_) {} }
+async function tokenHolen(art, inhalt) {
+  const antwort = await fetch(SERVER + "/auth/v1/token?grant_type=" + art, {
+    method: "POST", headers: { apikey: APP_SCHLUESSEL, "Content-Type": "application/json" }, body: JSON.stringify(inhalt) });
+  const json = await antwort.json().catch(() => ({}));
+  if (!antwort.ok) { const f = new Error(json.msg || json.error_description || "Anmeldung fehlgeschlagen"); f.status = antwort.status; throw f; }
+  sitzungMerken(json);
+}
+async function sitzungErneuern() {
+  try { await tokenHolen("refresh_token", { refresh_token: sitzung.erneuerung }); }
+  catch (f) { if (f.status === 400 || f.status === 401) sitzungEnde(); throw f; }
+}
+async function leiterServer(methode, pfad, inhalt, prefer) {
+  if (!sitzung) throw new Error("Bitte anmelden.");
+  if (sitzung.ablauf - Date.now() < 60000) await sitzungErneuern();
+  const senden = () => fetch(SERVER + pfad, { method: methode, cache: "no-store",
+    headers: Object.assign({ apikey: APP_SCHLUESSEL, Authorization: "Bearer " + sitzung.zugriff, "Content-Type": "application/json" }, prefer ? { Prefer: prefer } : {}),
+    body: inhalt === undefined ? undefined : JSON.stringify(inhalt) });
+  let antwort = await senden();
+  if (antwort.status === 401) { await sitzungErneuern(); antwort = await senden(); }
+  const text = await antwort.text(), json = text ? JSON.parse(text) : null;
+  if (!antwort.ok) throw new Error(antwort.status === 403 ? "Dieses Konto darf das nicht." : ((json && json.message) || "Der Server meldet einen Fehler."));
+  return json;
+}
+let meldungZeit = 0;
+function meldung(text) {
+  const feld = document.getElementById("meldung");
+  feld.textContent = text; feld.hidden = false;
+  clearTimeout(meldungZeit); meldungZeit = setTimeout(() => { feld.hidden = true; }, 5000);
+}
+// Anmeldung am Ende der Übersicht: unauffällig, weil die meisten nur lesen.
+function kontoHTML() {
+  if (sitzung) return '<div class="konto">Als Leiter angemeldet. <button class="link" data-konto="ab">Abmelden</button></div>';
+  if (!kontoOffen) return '<div class="konto"><button class="link" data-konto="auf">Als Leiter anmelden</button></div>';
+  return '<div class="konto"><form id="anmelden"><input type="email" name="email" placeholder="E-Mail" autocomplete="username" required>'
+    + '<input type="password" name="passwort" placeholder="Passwort" autocomplete="current-password" required>'
+    + '<button class="knopf" type="submit">Anmelden</button>' + (kontoFehler ? '<div class="fehler">' + html(kontoFehler) + "</div>" : "") + "</form></div>";
+}
+haupt.addEventListener("submit", async ereignis => {
+  if (ereignis.target.id !== "anmelden") return;
+  ereignis.preventDefault();
+  const felder = new FormData(ereignis.target);
+  if (document.activeElement) document.activeElement.blur();
+  try {
+    await tokenHolen("password", { email: String(felder.get("email")).trim(), password: String(felder.get("passwort")) });
+    kontoOffen = false; kontoFehler = "";
+  } catch (_) { kontoFehler = "Anmeldung fehlgeschlagen. Bitte E-Mail und Passwort prüfen."; }
+  zeigen();
+});
+
+function reihenfolge(l) { return alleEintraege(l).map(e => e.id); }
+function nachfolger(l, id) {
+  const ids = reihenfolge(l), i = ids.findIndex(x => klein(x) === klein(id));
+  return i >= 0 && i + 1 < ids.length ? ids[i + 1] : null;
+}
+// Meldet den Live-Stand (`null` beendet Live). Die Seite zeigt ihn sofort; schlägt das Melden fehl, gilt wieder der alte.
+async function liveMelden(neu) {
+  const alt = live;
+  live = neu; liveSchreibt++; liveGemeldetUm = Date.now();
+  if (!liveFolgen()) zeigen();
+  try {
+    await leiterServer("POST", "/rest/v1/rpc/live_setzen", { p_setliste: neu ? neu.setlisteID : null, p_aktuell: neu ? neu.aktuellID : null,
+      p_naechster: neu ? neu.naechsterID : null, p_gespielt: neu ? neu.gespieltIDs || [] : [] });
+    liveGemeldetUm = Date.now();
+    return true;
+  } catch (f) {
+    live = alt; meldung("Nicht gemeldet: " + f.message); zeigen();
+    return false;
+  } finally { liveSchreibt--; }
+}
+// Dieser Song läuft jetzt; danach geht es der Reihe nach weiter.
+function liveAktuell(id) {
+  const l = live && setliste(live.setlisteID);
+  if (!l) return;
+  const liefen = (live.gespieltIDs || []).slice();
+  if (!liefen.some(x => klein(x) === klein(id))) liefen.push(id);
+  liveMelden({ setlisteID: live.setlisteID, aktuellID: id, naechsterID: nachfolger(l, id), gespieltIDs: liefen });
+}
+// Flagge: Dieser Song kommt als Nächster. Auf dem schon markierten Song hebt sie die Wahl auf (wieder der Reihe nach).
+function liveFlagge(id) {
+  const l = live && setliste(live.setlisteID);
+  if (!l || klein(id) === klein(live.aktuellID)) return;
+  const reihum = live.aktuellID ? nachfolger(l, live.aktuellID) : (reihenfolge(l)[0] || null);
+  liveMelden(Object.assign({}, live, { naechsterID: klein(live.naechsterID) === klein(id) ? reihum : id }));
+}
+// Wie in der App: Mit jedem Start und jedem Ende beginnt die Marke „NEU“ von vorn.
+async function neuLoeschen(listeID) {
+  try {
+    const z = (await leiterServer("GET", "/rest/v1/datensatz?select=id,inhalt,version&id=eq." + klein(listeID)))[0];
+    if (!z || !(z.inhalt.sets || []).some(s => (s.eintraege || []).some(e => e.neu != null))) return;
+    const inhalt = structuredClone(z.inhalt);
+    inhalt.sets.forEach(s => s.eintraege.forEach(e => { delete e.neu; }));
+    await leiterServer("PATCH", "/rest/v1/datensatz?id=eq." + z.id + "&version=eq." + z.version, { inhalt });
+    await laden();
+  } catch (_) {}
+}
+async function liveStarten(l) {
+  const erster = reihenfolge(l)[0];
+  if (!erster) return meldung("Diese Setliste hat noch keine Songs.");
+  davorOffen = false;
+  if (await liveMelden({ setlisteID: l.id, aktuellID: null, naechsterID: erster, gespieltIDs: [] })) neuLoeschen(l.id);
+}
+async function liveBeenden() {
+  if (!live || !confirm("Live beenden? Die Marken JETZT und DANACH verschwinden bei allen.")) return;
+  const id = live.setlisteID;
+  if (await liveMelden(null)) neuLoeschen(id);
+}
+
+// Bedienleiste des Leiters: über der Setliste (`e` leer) und im Song.
+function leiterLeisteHTML(l, e) {
+  if (!leiter()) return "";
+  const hier = live && klein(live.setlisteID) === klein(l.id), titel = id => { const x = alleEintraege(l).find(y => klein(y.id) === klein(id)); return x && song(x.songID) ? song(x.songID).titel : ""; };
+  if (!hier) {
+    if (e) return "";
+    const andere = live ? setliste(live.setlisteID) : null;
+    return '<div class="leiter">' + (andere ? '<div class="info">Live läuft gerade mit „' + html(andere.name) + '“.</div><button class="knopf rot" data-live="ende">Live beenden</button>'
+      : '<button class="knopf haupt" data-live="start">▶ Live starten</button>') + '<button class="knopf" data-plus="">+ Song</button></div>';
+  }
+  const weiter = live.naechsterID ? '<button class="knopf haupt" data-live="weiter">▶ <span>' + (live.aktuellID ? "Weiter: " : "Los: ") + html(titel(live.naechsterID)) + "</span></button>" : "";
+  if (e) {
+    const laeuft = klein(live.aktuellID) === klein(e.id), dran = klein(live.naechsterID) === klein(e.id);
+    return '<div class="leiter">' + (laeuft || dran ? "" : '<button class="knopf" data-live="jetzt" data-id="' + html(e.id) + '">Dieser läuft jetzt</button>') + weiter + "</div>";
+  }
+  return '<div class="leiter">' + weiter + '<button class="knopf" data-plus="">+ Song</button><button class="knopf rot" data-live="ende">Live beenden</button></div>';
+}
+// Tipps auf die Bedienung des Leiters; liefert `true`, wenn der Tipp hier erledigt wurde.
+function leiterKlick(knopf) {
+  const d = knopf.dataset;
+  if (d.konto === "auf") { kontoOffen = true; kontoFehler = ""; zeigen(); return true; }
+  if (d.konto === "ab") { sitzungEnde(); zeigen(); return true; }
+  if (!leiter()) return false;
+  const l = setliste(ort().l);
+  if (d.live === "start" && l) { liveStarten(l); return true; }
+  if (d.live === "ende") { liveBeenden(); return true; }
+  if (d.live === "weiter") { if (live && live.naechsterID) liveAktuell(live.naechsterID); return true; }
+  if (d.live === "jetzt") { liveAktuell(d.id); return true; }
+  if (d.flagge) { liveFlagge(d.flagge); return true; }
+  if ("plus" in d && l) { lupeOeffnen(l, d.plus === "" ? null : Number(d.plus)); return true; }
+  return false;
+}
+
+// Lupe: einen Song der Band in die Setliste nehmen. Im Live-Betrieb kommt er hinter den nächsten Song und trägt „NEU“.
+let lupeSongs = null, lupeListeID = "", lupeSet = null, lupeFrisch = "";
+function uuid() {
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+  const h = [...b].map(x => x.toString(16).padStart(2, "0")).join("").toUpperCase();
+  return h.slice(0, 8) + "-" + h.slice(8, 12) + "-" + h.slice(12, 16) + "-" + h.slice(16, 20) + "-" + h.slice(20);
+}
+async function lupeOeffnen(l, setIndex) {
+  lupeListeID = l.id; lupeSet = setIndex; lupeFrisch = "";
+  document.getElementById("lupeSuche").value = "";
+  document.getElementById("lupe").hidden = false;
+  lupeZeigen();
+  try {
+    // Nur die Angaben für die Liste, nicht die Liedtexte.
+    const zeilen = await leiterServer("GET", "/rest/v1/datensatz?select=id,band_ids,sid:inhalt->>id,titel:inhalt->>titel,kuenstler:inhalt->>kuenstler,tonart:inhalt->>tonart,bpm:inhalt->bpm&art=eq.song&geloescht=eq.false");
+    lupeSongs = zeilen.map(z => { const i = z.inhalt || z; return { id: z.sid || i.id || z.id, titel: i.titel || "", kuenstler: i.kuenstler || "", tonart: i.tonart || "", bpm: i.bpm || 0, bands: (z.band_ids || []).map(klein) }; })
+      .sort((a, b) => a.titel.localeCompare(b.titel, "de"));
+  } catch (f) { lupeSongs = []; meldung("Songs nicht geladen: " + f.message); }
+  lupeZeigen();
+  document.getElementById("lupeSuche").focus();
+}
+function lupeZeigen() {
+  const l = setliste(lupeListeID), liste = document.getElementById("lupeListe");
+  if (!l) { document.getElementById("lupe").hidden = true; return; }
+  const hier = live && klein(live.setlisteID) === klein(l.id);
+  document.getElementById("lupeWohin").textContent = lupeSet != null ? "Kommt ans Ende von „" + ((l.sets[lupeSet] || {}).name || "Set " + (lupeSet + 1)) + "“"
+    : (hier ? "Kommt hinter den nächsten Song und trägt die Marke NEU" : "Kommt ans Ende des letzten Sets");
+  if (!lupeSongs) { liste.innerHTML = '<div class="pause">Lädt …</div>'; return; }
+  const woerter = document.getElementById("lupeSuche").value.toLowerCase().split(/\s+/).filter(Boolean);
+  const zahl = {}; alleEintraege(l).forEach(e => { zahl[klein(e.songID)] = (zahl[klein(e.songID)] || 0) + 1; });
+  const passend = lupeSongs.filter(s => s.bands.includes(klein(l.bandID)) && woerter.every(w => (s.titel + " " + s.kuenstler).toLowerCase().includes(w)));
+  liste.innerHTML = passend.map(s => '<button class="zeile' + (lupeFrisch === s.id ? " frisch" : "") + '" data-song="' + html(s.id) + '">'
+    + '<span class="mitte"><b>' + html(s.titel) + "</b><span>" + html([s.kuenstler, s.bpm ? s.bpm + " bpm" : ""].filter(Boolean).join(" · ")) + "</span></span>"
+    + (zahl[klein(s.id)] ? '<span class="mal">' + zahl[klein(s.id)] + "×</span>" : "")
+    + '<span class="hinten"><span class="tonart mono">' + html(tonartText(s.tonart)) + '</span></span><span class="plus" aria-hidden="true">' + (lupeFrisch === s.id ? "✓" : "+") + "</span></button>").join("")
+    || '<div class="pause">Kein Song gefunden</div>';
+}
+async function songHinzu(songID) {
+  const l = setliste(lupeListeID);
+  if (!l) return;
+  const z = (await leiterServer("GET", "/rest/v1/datensatz?select=id,inhalt,version&id=eq." + klein(l.id)))[0];
+  if (!z) throw new Error("Die Setliste gibt es nicht mehr.");
+  const inhalt = structuredClone(z.inhalt), hier = live && klein(live.setlisteID) === klein(l.id);
+  if (!(inhalt.sets || []).length) throw new Error("Die Setliste hat noch kein Set.");
+  const neu = { id: uuid(), songID };
+  if (hier) neu.neu = true;
+  let drin = false;
+  const anker = lupeSet == null && hier ? (live.naechsterID || live.aktuellID) : null;
+  if (anker) for (const s of inhalt.sets) {
+    let i = s.eintraege.findIndex(e => klein(e.id) === klein(anker));
+    if (i < 0) continue;
+    // Steht der Anker in einem Medley, kommt der neue Song hinter den ganzen Block.
+    const m = s.eintraege[i].medleyID;
+    if (m) while (i + 1 < s.eintraege.length && s.eintraege[i + 1].medleyID === m) i++;
+    s.eintraege.splice(i + 1, 0, neu); drin = true; break;
+  }
+  if (!drin) (inhalt.sets[lupeSet == null ? inhalt.sets.length - 1 : lupeSet] || inhalt.sets[inhalt.sets.length - 1]).eintraege.push(neu);
+  // Mit Versionsnummer: Hat inzwischen jemand anderes die Setliste geändert, wird nichts überschrieben.
+  const rueck = await leiterServer("PATCH", "/rest/v1/datensatz?id=eq." + z.id + "&version=eq." + z.version + "&select=id", { inhalt }, "return=representation");
+  if (!rueck || !rueck.length) throw new Error("Die Setliste wurde gerade geändert. Bitte noch einmal tippen.");
+  await laden();
+}
+document.getElementById("lupeSuche").addEventListener("input", lupeZeigen);
+document.getElementById("lupeFertig").addEventListener("click", () => { document.getElementById("lupe").hidden = true; });
+document.getElementById("lupe").addEventListener("click", ereignis => { if (ereignis.target.id === "lupe") ereignis.currentTarget.hidden = true; });
+let lupeBeschaeftigt = false;
+document.getElementById("lupeListe").addEventListener("click", async ereignis => {
+  const knopf = ereignis.target.closest("button[data-song]");
+  if (!knopf || lupeBeschaeftigt) return;
+  lupeBeschaeftigt = true;
+  try { await songHinzu(knopf.dataset.song); lupeFrisch = knopf.dataset.song; }
+  catch (f) { meldung("Nicht hinzugefügt: " + f.message); }
+  lupeBeschaeftigt = false;
+  lupeZeigen();
+});
+
 // ---- Bedienung --------------------------------------------------------------------------------
 haupt.addEventListener("click", ereignis => {
   const knopf = ereignis.target.closest("button");
@@ -902,6 +1221,8 @@ haupt.addEventListener("click", ereignis => {
     return;
   }
   if (knopf.classList.contains("dioden")) { taktStart = performance.now(); return; }
+  if ("davor" in knopf.dataset) { davorOffen = !davorOffen; zeigen(); return; }
+  if (leiterKlick(knopf)) return;
   if (knopf.dataset.rolle) {
     rolle = knopf.dataset.rolle; wahlOffen = false;
     try { localStorage.setItem("stagelist-rolle", rolle); } catch (_) {}

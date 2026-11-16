@@ -361,10 +361,11 @@
 
 <div id="admin">
     <div class="akopf">
-        <div class="reiter" id="adminReiter" style="min-width: 340px;">
+        <div class="reiter" id="adminReiter" style="min-width: 440px;">
             <button type="button" data-admin="historie" class="an">Historie</button>
             <button type="button" data-admin="mitglieder">Mitglieder</button>
             <button type="button" data-admin="verbrauch">Verbrauch</button>
+            <button type="button" data-admin="link">Lese-Link</button>
         </div>
         <select id="hPerson" style="width: 180px;"></select>
         <select id="hArt" style="width: 150px;">
@@ -1553,6 +1554,7 @@ async function adminZeigen() {
     try {
         if (adminSeite === "historie") { await historieLaden(); historieZeigen(); }
         else if (adminSeite === "mitglieder") await mitgliederZeigen();
+        else if (adminSeite === "link") await linkZeigen();
         else await verbrauchZeigen();
     } catch (fehler) {
         $("adminInhalt").innerHTML = `<p class="hilfe">${html(fehler.message)}</p>`;
@@ -1692,6 +1694,37 @@ async function verbrauchZeigen() {
             <div class="vraster">${arten.map(([art, n]) => `<div><b>${n}</b><span>${html(ARTEN[art] || art)}</span></div>`).join("") || '<span>Noch keine Einträge.</span>'}</div>
         </div>
         <p class="hilfe">Die 500 MB sind die Grenze des kostenlosen Tarifs für die Datenbank; ein Teil davon ist von Supabase selbst belegt. Jede Änderung legt eine Fassung in der Historie ab, deshalb wächst vor allem sie. Datenverkehr (5 GB im Monat frei) und die Zahl der aktiven Nutzer kennt die Datenbank nicht: Die stehen im Supabase-Dashboard unter „Usage“.</p>`;
+}
+
+/// Lese-Link für die Band: die Bandansicht im Browser, ohne Konto. Derselbe Link wie in der App (Einstellungen → Cloud).
+async function linkZeigen() {
+    const links = await server("POST", "/rest/v1/rpc/leselinks", {});
+    const link = links.find(l => l.art === "beides");
+    const adresse = link ? new URL("lesen.html", location.href).href.split("#")[0] + "#k=" + link.schluessel : "";
+    $("adminInhalt").innerHTML = `
+        <div class="vkarte">
+            <h3>Link für die Band</h3>
+            ${link ? `<input id="linkFeld" readonly value="${html(adresse)}" style="width: 100%; margin: 8px 0;">
+                <p class="hilfe">Erzeugt am ${new Date(link.erneuert_am).toLocaleDateString("de-DE")}. Wer den Link hat, sieht die aktiven Setlisten mit Text und Akkorden, kann aber nichts ändern.</p>
+                <button class="knopf" id="linkKopieren">Link kopieren</button>
+                <a class="knopf" href="${html(adresse)}" target="_blank" rel="noopener" style="text-decoration: none; color: inherit; display: inline-block;">Bandansicht öffnen</a>
+                <button class="knopf" id="linkNeu">Neuen Link erzeugen</button>`
+            : `<p class="hilfe">Es gibt noch keinen Link.</p><button class="knopf" id="linkNeu">Link erzeugen</button>`}
+            <span class="hilfe" id="linkMeldung"></span>
+        </div>
+        <p class="hilfe">Den Link schickst du der Band, zum Beispiel per WhatsApp. Ein neuer Link macht den alten sofort ungültig: Dann braucht jeder den neuen. Auf der Bandansicht kannst du dich unten als Leiter anmelden und den Auftritt von dort steuern (Live starten, Weiter, Songs hinzufügen).</p>`;
+    if (link) $("linkKopieren").addEventListener("click", async () => {
+        try { await navigator.clipboard.writeText(adresse); } catch (_) { $("linkFeld").select(); document.execCommand("copy"); }
+        $("linkMeldung").textContent = "Kopiert ✓";
+    });
+    $("linkNeu").addEventListener("click", async () => {
+        if (link && !confirm("Neuen Link erzeugen? Der alte Link gilt dann sofort nicht mehr, und jeder in der Band braucht den neuen.")) return;
+        const schluessel = [...crypto.getRandomValues(new Uint8Array(24))].map(x => x.toString(16).padStart(2, "0")).join("");
+        try {
+            await server("POST", "/rest/v1/rpc/leselink_setzen", { p_art: "beides", p_schluessel: schluessel });
+            await linkZeigen();
+        } catch (fehler) { $("linkMeldung").textContent = fehler.message; }
+    });
 }
 
 $("adminKnopf").addEventListener("click", adminOeffnen);
