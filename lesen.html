@@ -1181,11 +1181,10 @@ async function songHinzu(songID) {
   let drin = false;
   const anker = lupeSet == null && hier ? (live.naechsterID || live.aktuellID) : null;
   if (anker) for (const s of inhalt.sets) {
-    let i = s.eintraege.findIndex(e => klein(e.id) === klein(anker));
+    const i = s.eintraege.findIndex(e => klein(e.id) === klein(anker));
     if (i < 0) continue;
-    // Steht der Anker in einem Medley, kommt der neue Song hinter den ganzen Block.
-    const m = s.eintraege[i].medleyID;
-    if (m) while (i + 1 < s.eintraege.length && s.eintraege[i + 1].medleyID === m) i++;
+    // Steht der Anker in einem Medley, gehört der neue Song dazu: Das Medley wächst um ihn.
+    if (s.eintraege[i].medleyID) neu.medleyID = s.eintraege[i].medleyID;
     s.eintraege.splice(i + 1, 0, neu); drin = true; break;
   }
   if (!drin) (inhalt.sets[lupeSet == null ? inhalt.sets.length - 1 : lupeSet] || inhalt.sets[inhalt.sets.length - 1]).eintraege.push(neu);
